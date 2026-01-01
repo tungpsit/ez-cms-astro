@@ -1,0 +1,13 @@
+{
+  "id": "code-highlighter",
+  "name": "Code Highlighter",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "Beautiful syntax highlighting for code blocks in your content.",
+  "hooks": ["injectHead", "injectBodyEnd"],
+  "defaultSettings": {
+    "theme": "dracula",
+    "lineNumbers": true,
+    "copyButton": true
+  }
+}

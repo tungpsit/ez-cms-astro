@@ -1,0 +1,13 @@
+{
+  "id": "seo-optimizer",
+  "name": "SEO Optimizer",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "Automatically optimize your content for search engines with meta tags, sitemaps, and more.",
+  "hooks": ["injectHead"],
+  "defaultSettings": {
+    "autoGenerateMetaTags": true,
+    "generateSitemap": true,
+    "enableOpenGraph": true
+  }
+}

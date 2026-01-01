@@ -1,6 +1,9 @@
 ---
-import '../styles/global.css';
-import { getConfig } from '../lib/cms/config';
+import { getConfig } from "../lib/cms/config";
+import { initPlugins, injectBodyEnd, injectHead } from "../lib/cms/plugins";
+import { getThemeById, loadActiveTheme } from "../lib/cms/themes";
+import { hexToRgb } from "../lib/cms/utils";
+import "../styles/global.css";
 
 interface Props {
   title?: string;
@@ -9,39 +12,87 @@ interface Props {
 }
 
 const config = getConfig();
+const activeThemeId = await loadActiveTheme();
+const activeTheme = getThemeById(activeThemeId);
+const themeSettings = activeTheme?.settings || {
+  primaryColor: "#10b981",
+  accentColor: "#8b5cf6",
+  backgroundColor: "#0f172a",
+  textColor: "#e2e8f0",
+};
+
 const { title, description, image } = Astro.props;
 
 const pageTitle = title ? `${title} | ${config.siteName}` : config.siteName;
 const pageDescription = description || config.siteDescription;
 const pageImage = image || config.seo.defaultOgImage;
+
+await initPlugins();
+const headInjections = injectHead();
+const bodyEndInjections = injectBodyEnd();
 ---
 
-<!DOCTYPE html>
-<html lang={config.language} class="dark">
+<!doctype html>
+<html lang={config.language}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    
+
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
-    
+
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />
     {pageImage && <meta property="og:image" content={pageImage} />}
     <meta property="og:type" content="website" />
-    
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={pageDescription} />
     {pageImage && <meta name="twitter:image" content={pageImage} />}
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style
+      define:vars={{
+        "theme-primary": themeSettings.primaryColor as string,
+        "theme-primary-rgb": hexToRgb(themeSettings.primaryColor as string),
+        "theme-accent": themeSettings.accentColor as string,
+        "theme-accent-rgb": hexToRgb(themeSettings.accentColor as string),
+        "theme-background": themeSettings.backgroundColor as string,
+        "theme-background-rgb": hexToRgb(
+          themeSettings.backgroundColor as string,
+        ),
+        "theme-text": themeSettings.textColor as string,
+        "theme-text-rgb": hexToRgb(themeSettings.textColor as string),
+      }}
+    >
+      :root {
+        --theme-primary: var(--theme-primary);
+        --theme-primary-rgb: var(--theme-primary-rgb);
+        --theme-accent: var(--theme-accent);
+        --theme-accent-rgb: var(--theme-accent-rgb);
+        --theme-background: var(--theme-background);
+        --theme-background-rgb: var(--theme-background-rgb);
+        --theme-text: var(--theme-text);
+        --theme-text-rgb: var(--theme-text-rgb);
+      }
+    </style>
+
+    <Fragment set:html={headInjections} />
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+  <body
+    class="min-h-screen antialiased"
+    style={`background-color: var(--theme-background); color: var(--theme-text);`}
+  >
     <slot />
+    <Fragment set:html={bodyEndInjections} />
   </body>
 </html>

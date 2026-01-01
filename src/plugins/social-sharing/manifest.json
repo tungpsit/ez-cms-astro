@@ -1,0 +1,12 @@
+{
+  "id": "social-sharing",
+  "name": "Social Sharing",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "Add social sharing buttons to your posts and pages.",
+  "hooks": ["afterContent"],
+  "defaultSettings": {
+    "platforms": ["twitter", "facebook", "linkedin"],
+    "position": "bottom"
+  }
+}

@@ -1,94 +1,36 @@
-import type { Plugin, PluginHook } from './types';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { Plugin, PluginDefinition, PluginHook } from './types';
 
 const PLUGINS_STATE_FILE = path.join(process.cwd(), 'src/content/plugins-state.json');
 
-export const availablePlugins: Plugin[] = [
-  {
-    id: 'seo-optimizer',
-    name: 'SEO Optimizer',
-    version: '1.0.0',
-    author: 'EZ CMS',
-    description: 'Automatically optimize your content for search engines with meta tags, sitemaps, and more.',
-    enabled: true,
-    settings: {
-      autoGenerateMetaTags: true,
-      generateSitemap: true,
-      enableOpenGraph: true,
-    },
-    hooks: ['beforeRender', 'afterBuild'],
-  },
-  {
-    id: 'analytics',
-    name: 'Analytics',
-    version: '1.0.0',
-    author: 'EZ CMS',
-    description: 'Track visitor statistics and page views with privacy-friendly analytics.',
+// Load plugin definitions and implementations
+const manifestModules = import.meta.glob('../../plugins/*/manifest.json', { eager: true });
+const implementationModules = import.meta.glob('../../plugins/*/index.ts', { eager: true });
+
+const pluginImplementations: Record<string, any> = {};
+
+export const availablePlugins: Plugin[] = Object.keys(manifestModules).map(key => {
+  const manifest = (manifestModules[key] as any).default as PluginDefinition;
+  const folder = key.split('/')[3];
+  
+  // Find matching implementation
+  const implementationKey = Object.keys(implementationModules).find(k => k.includes(`/${folder}/index.ts`));
+  if (implementationKey) {
+    pluginImplementations[manifest.id] = (implementationModules[implementationKey] as any).default;
+  }
+
+  return {
+    id: manifest.id,
+    name: manifest.name,
+    version: manifest.version,
+    author: manifest.author,
+    description: manifest.description,
     enabled: false,
-    settings: {
-      trackPageViews: true,
-      trackClicks: false,
-      anonymizeIP: true,
-    },
-    hooks: ['onPageView'],
-  },
-  {
-    id: 'social-sharing',
-    name: 'Social Sharing',
-    version: '1.0.0',
-    author: 'EZ CMS',
-    description: 'Add social sharing buttons to your posts and pages.',
-    enabled: true,
-    settings: {
-      platforms: ['twitter', 'facebook', 'linkedin'],
-      position: 'bottom',
-    },
-    hooks: ['afterContent'],
-  },
-  {
-    id: 'comments',
-    name: 'Comments',
-    version: '1.0.0',
-    author: 'EZ CMS',
-    description: 'Enable commenting on your posts with moderation support.',
-    enabled: false,
-    settings: {
-      moderation: true,
-      allowAnonymous: false,
-      nestingLevel: 3,
-    },
-    hooks: ['afterContent'],
-  },
-  {
-    id: 'newsletter',
-    name: 'Newsletter',
-    version: '1.0.0',
-    author: 'EZ CMS',
-    description: 'Build your email list with customizable subscription forms.',
-    enabled: false,
-    settings: {
-      provider: 'internal',
-      doubleOptIn: true,
-      welcomeEmail: true,
-    },
-    hooks: ['onFormSubmit'],
-  },
-  {
-    id: 'code-highlighter',
-    name: 'Code Highlighter',
-    version: '1.0.0',
-    author: 'EZ CMS',
-    description: 'Beautiful syntax highlighting for code blocks in your content.',
-    enabled: true,
-    settings: {
-      theme: 'dracula',
-      lineNumbers: true,
-      copyButton: true,
-    },
-    hooks: ['beforeRender'],
-  },
-];
+    settings: manifest.defaultSettings || {},
+    hooks: manifest.hooks || []
+  };
+});
 
 let pluginsState: Record<string, { enabled: boolean; settings: Record<string, unknown> }> = {};
 
@@ -157,4 +99,80 @@ export function getPluginsByHook(hook: PluginHook): Plugin[] {
   return availablePlugins.filter(p => p.enabled && p.hooks.includes(hook));
 }
 
-loadPluginsState();
+// Plugin Execution Logic
+export function injectHead(): string {
+  const plugins = getPluginsByHook('injectHead');
+  let html = '';
+
+  for (const plugin of plugins) {
+    const implementation = pluginImplementations[plugin.id];
+    if (implementation && typeof implementation.injectHead === 'function') {
+      html += implementation.injectHead(plugin.settings);
+    }
+  }
+
+  return html;
+}
+
+export function injectBodyStart(): string {
+  const plugins = getPluginsByHook('injectBodyStart');
+  let html = '';
+
+  for (const plugin of plugins) {
+    const implementation = pluginImplementations[plugin.id];
+    if (implementation && typeof implementation.injectBodyStart === 'function') {
+      html += implementation.injectBodyStart(plugin.settings);
+    }
+  }
+
+  return html;
+}
+
+export function injectBodyEnd(): string {
+  const plugins = getPluginsByHook('injectBodyEnd');
+  let html = '';
+
+  for (const plugin of plugins) {
+    const implementation = pluginImplementations[plugin.id];
+    if (implementation && typeof implementation.injectBodyEnd === 'function') {
+      html += implementation.injectBodyEnd(plugin.settings);
+    }
+  }
+
+  return html;
+}
+
+export function processContent(content: string): string {
+  let processedContent = content;
+  
+  // afterContent hook
+  const afterContentPlugins = getPluginsByHook('afterContent');
+  let additions = '';
+
+  for (const plugin of afterContentPlugins) {
+    const implementation = pluginImplementations[plugin.id];
+    if (implementation && typeof implementation.afterContent === 'function') {
+      additions += implementation.afterContent(plugin.settings);
+    }
+  }
+
+  // transformContent hook
+  const transformPlugins = getPluginsByHook('transformContent');
+  for (const plugin of transformPlugins) {
+    const implementation = pluginImplementations[plugin.id];
+    if (implementation && typeof implementation.transformContent === 'function') {
+      processedContent = implementation.transformContent(processedContent, plugin.settings);
+    }
+  }
+
+  return processedContent + additions;
+}
+
+let loadPromise: Promise<void> | null = null;
+
+export async function initPlugins(): Promise<void> {
+  if (!loadPromise) {
+    loadPromise = loadPluginsState();
+  }
+  return loadPromise;
+}

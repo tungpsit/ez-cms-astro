@@ -1,146 +1,369 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getAllPlugins } from '../../lib/cms/plugins';
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { getAllPlugins, initPlugins } from "../../lib/cms/plugins";
 
+await initPlugins();
 const plugins = getAllPlugins();
 ---
 
 <AdminLayout title="Plugins">
   <div class="space-y-6">
     <div>
-      <p class="text-slate-400">Extend your site's functionality with plugins</p>
+      <p class="text-slate-400">
+        Extend your site's functionality with plugins
+      </p>
     </div>
 
     <div id="plugins-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {plugins.map(plugin => (
-        <div class={`card ${plugin.enabled ? 'border-emerald-500/30' : ''}`} data-plugin-id={plugin.id}>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div class={`w-10 h-10 rounded-lg flex items-center justify-center ${plugin.enabled ? 'bg-emerald-500/10' : 'bg-slate-800'}`}>
-                <svg class={`w-5 h-5 ${plugin.enabled ? 'text-emerald-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" />
-                </svg>
+      {
+        plugins.map((plugin) => (
+          <div
+            class={`card ${plugin.enabled ? "border-emerald-500/30" : ""}`}
+            data-plugin-id={plugin.id}
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div
+                  class={`w-10 h-10 rounded-lg flex items-center justify-center ${plugin.enabled ? "bg-emerald-500/10" : "bg-slate-800"}`}
+                >
+                  <svg
+                    class={`w-5 h-5 ${plugin.enabled ? "text-emerald-400" : "text-slate-500"}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-slate-100">{plugin.name}</h3>
+                  <p class="text-xs text-slate-500">
+                    v{plugin.version} by {plugin.author}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-semibold text-slate-100">{plugin.name}</h3>
-                <p class="text-xs text-slate-500">v{plugin.version} by {plugin.author}</p>
+
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  class="sr-only peer plugin-toggle"
+                  data-plugin-id={plugin.id}
+                  checked={plugin.enabled}
+                />
+                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+              </label>
+            </div>
+
+            <p class="text-sm text-slate-400 mb-4">{plugin.description}</p>
+
+            <div
+              class={`settings-section ${plugin.enabled && Object.keys(plugin.settings).length > 0 ? "" : "hidden"}`}
+            >
+              <div class="pt-4 border-t border-slate-800">
+                <h4 class="text-sm font-medium text-slate-300 mb-3">
+                  Settings
+                </h4>
+                <div class="space-y-2">
+                  {Object.entries(plugin.settings)
+                    .slice(0, 3)
+                    .map(([key, value]) => (
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-400 capitalize">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </span>
+                        <span class="text-slate-500">
+                          {typeof value === "boolean"
+                            ? value
+                              ? "Yes"
+                              : "No"
+                            : Array.isArray(value)
+                              ? value.join(", ")
+                              : String(value)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <button
+                  class="configure-btn text-sm text-emerald-400 hover:text-emerald-300 mt-3"
+                  data-plugin-id={plugin.id}
+                >
+                  Configure →
+                </button>
               </div>
             </div>
-            
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                class="sr-only peer plugin-toggle" 
-                data-plugin-id={plugin.id}
-                checked={plugin.enabled}
-              />
-              <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
           </div>
-
-          <p class="text-sm text-slate-400 mb-4">{plugin.description}</p>
-
-          <div class={`settings-section ${plugin.enabled && Object.keys(plugin.settings).length > 0 ? '' : 'hidden'}`}>
-            <div class="pt-4 border-t border-slate-800">
-              <h4 class="text-sm font-medium text-slate-300 mb-3">Settings</h4>
-              <div class="space-y-2">
-                {Object.entries(plugin.settings).slice(0, 3).map(([key, value]) => (
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                    <span class="text-slate-500">
-                      {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : 
-                       Array.isArray(value) ? value.join(', ') : String(value)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <button class="configure-btn text-sm text-emerald-400 hover:text-emerald-300 mt-3" data-plugin-id={plugin.id}>
-                Configure →
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
 
     <div class="card border-dashed border-slate-700 bg-transparent">
       <div class="text-center py-8">
-        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <div
+          class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4"
+        >
+          <svg
+            class="w-8 h-8 text-slate-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-slate-100 mb-2">Install Plugin</h3>
+        <h3 class="text-lg font-semibold text-slate-100 mb-2">
+          Install Plugin
+        </h3>
         <p class="text-slate-400 mb-4 max-w-sm mx-auto">
           Add new plugins to extend your site's capabilities
         </p>
-        <button class="btn btn-secondary">
-          Browse Plugins
-        </button>
+        <button class="btn btn-secondary"> Browse Plugins </button>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="fixed bottom-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300"></div>
+  <div
+    id="toast"
+    class="fixed bottom-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50"
+  >
+  </div>
+
+  <!-- Configuration Modal -->
+  <div
+    id="config-modal"
+    class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden"
+  >
+    <div
+      class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+    >
+      <div
+        class="p-6 border-b border-slate-800 flex items-center justify-between"
+      >
+        <h3 id="modal-title" class="text-xl font-bold text-slate-100">
+          Configure Plugin
+        </h3>
+        <button
+          id="close-modal"
+          class="text-slate-400 hover:text-slate-100 transition-colors"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <form id="config-form" class="p-6 space-y-6">
+        <input type="hidden" id="modal-plugin-id" />
+        <div id="modal-fields" class="space-y-4">
+          <!-- Fields will be injected here -->
+        </div>
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" id="cancel-config" class="btn btn-secondary"
+            >Cancel</button
+          >
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </AdminLayout>
 
-<script>
-  const toast = document.getElementById('toast') as HTMLElement;
+<script define:vars={{ plugins }}>
+  const toast = document.getElementById("toast");
+  const modal = document.getElementById("config-modal");
+  const configForm = document.getElementById("config-form");
+  const modalFields = document.getElementById("modal-fields");
+  const modalTitle = document.getElementById("modal-title");
+  const modalPluginId = document.getElementById("modal-plugin-id");
 
-  function showToast(message: string, isError = false) {
+  function showToast(message, isError = false) {
     toast.textContent = message;
-    toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-red-500' : 'bg-emerald-500'} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300`;
+    toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300 z-50`;
     setTimeout(() => {
-      toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-red-500' : 'bg-emerald-500'} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300`;
+      toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50`;
     }, 3000);
   }
 
-  document.querySelectorAll('.plugin-toggle').forEach(toggle => {
-    toggle.addEventListener('change', async (e) => {
-      const input = e.target as HTMLInputElement;
+  function openModal(pluginId) {
+    const plugin = plugins.find((p) => p.id === pluginId);
+    if (!plugin) return;
+
+    modalTitle.textContent = `Configure ${plugin.name}`;
+    modalPluginId.value = plugin.id;
+    modalFields.innerHTML = "";
+
+    Object.entries(plugin.settings).forEach(([key, value]) => {
+      const fieldContainer = document.createElement("div");
+      fieldContainer.className = "space-y-2";
+
+      const label = document.createElement("label");
+      label.className = "block text-sm font-medium text-slate-300 capitalize";
+      label.textContent = key.replace(/([A-Z])/g, " $1").trim();
+      fieldContainer.appendChild(label);
+
+      if (typeof value === "boolean") {
+        const toggleContainer = document.createElement("label");
+        toggleContainer.className =
+          "relative inline-flex items-center cursor-pointer";
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = "sr-only peer";
+        input.name = key;
+        input.checked = value;
+
+        const slider = document.createElement("div");
+        slider.className =
+          "w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500";
+
+        toggleContainer.appendChild(input);
+        toggleContainer.appendChild(slider);
+        fieldContainer.appendChild(toggleContainer);
+      } else if (Array.isArray(value)) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "input w-full";
+        input.name = key;
+        input.value = value.join(", ");
+        const help = document.createElement("p");
+        help.className = "text-xs text-slate-500";
+        help.textContent = "Separate items with commas";
+        fieldContainer.appendChild(input);
+        fieldContainer.appendChild(help);
+      } else {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "input w-full";
+        input.name = key;
+        input.value = String(value);
+        fieldContainer.appendChild(input);
+      }
+
+      modalFields.appendChild(fieldContainer);
+    });
+
+    modal.classList.remove("hidden");
+  }
+
+  function closeModal() {
+    modal.classList.add("hidden");
+  }
+
+  document.querySelectorAll(".configure-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openModal(btn.dataset.pluginId);
+    });
+  });
+
+  document.getElementById("close-modal").addEventListener("click", closeModal);
+  document
+    .getElementById("cancel-config")
+    .addEventListener("click", closeModal);
+
+  configForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pluginId = modalPluginId.value;
+    const formData = new FormData(configForm);
+    const settings = {};
+
+    const plugin = plugins.find((p) => p.id === pluginId);
+    Object.keys(plugin.settings).forEach((key) => {
+      const value = plugin.settings[key];
+      if (typeof value === "boolean") {
+        settings[key] = formData.has(key);
+      } else if (Array.isArray(value)) {
+        settings[key] = formData
+          .get(key)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      } else {
+        settings[key] = formData.get(key);
+      }
+    });
+
+    try {
+      const res = await fetch("/api/plugins", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pluginId, settings }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        showToast("Settings saved successfully!");
+        closeModal();
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        showToast(result.error || "Failed to save settings", true);
+      }
+    } catch (err) {
+      showToast("An error occurred", true);
+    }
+  });
+
+  document.querySelectorAll(".plugin-toggle").forEach((toggle) => {
+    toggle.addEventListener("change", async (e) => {
+      const input = e.target;
       const pluginId = input.dataset.pluginId;
       const enabled = input.checked;
-      
+
       try {
-        const res = await fetch('/api/plugins', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/plugins", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pluginId, enabled }),
         });
-        
+
         const result = await res.json();
-        
+
         if (result.success) {
-          showToast(enabled ? 'Plugin enabled!' : 'Plugin disabled!');
-          const card = input.closest('[data-plugin-id]');
+          showToast(enabled ? "Plugin enabled!" : "Plugin disabled!");
+          const card = input.closest("[data-plugin-id]");
           if (card) {
-            const icon = card.querySelector('.w-10.h-10');
-            const svg = card.querySelector('.w-10.h-10 svg');
-            const settings = card.querySelector('.settings-section');
-            
+            const icon = card.querySelector(".w-10.h-10");
+            const svg = card.querySelector(".w-10.h-10 svg");
+            const settings = card.querySelector(".settings-section");
+
             if (enabled) {
-              card.classList.add('border-emerald-500/30');
-              icon?.classList.remove('bg-slate-800');
-              icon?.classList.add('bg-emerald-500/10');
-              svg?.classList.remove('text-slate-500');
-              svg?.classList.add('text-emerald-400');
-              settings?.classList.remove('hidden');
+              card.classList.add("border-emerald-500/30");
+              icon?.classList.remove("bg-slate-800");
+              icon?.classList.add("bg-emerald-500/10");
+              svg?.classList.remove("text-slate-500");
+              svg?.classList.add("text-emerald-400");
+              settings?.classList.remove("hidden");
             } else {
-              card.classList.remove('border-emerald-500/30');
-              icon?.classList.add('bg-slate-800');
-              icon?.classList.remove('bg-emerald-500/10');
-              svg?.classList.add('text-slate-500');
-              svg?.classList.remove('text-emerald-400');
-              settings?.classList.add('hidden');
+              card.classList.remove("border-emerald-500/30");
+              icon?.classList.add("bg-slate-800");
+              icon?.classList.remove("bg-emerald-500/10");
+              svg?.classList.add("text-slate-500");
+              svg?.classList.remove("text-emerald-400");
+              settings?.classList.add("hidden");
             }
           }
         } else {
           input.checked = !enabled;
-          showToast(result.error || 'Failed to update plugin', true);
+          showToast(result.error || "Failed to update plugin", true);
         }
       } catch (err) {
         input.checked = !enabled;
-        showToast('An error occurred', true);
+        showToast("An error occurred", true);
       }
     });
   });

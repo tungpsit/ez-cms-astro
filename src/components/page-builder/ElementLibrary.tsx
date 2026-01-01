@@ -1,29 +1,29 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { ELEMENT_CATEGORIES, type ElementType } from '../../lib/page-builder/types';
 import {
-  Square,
-  Columns,
-  Heading,
-  AlignLeft,
-  Image,
-  MousePointer,
-  Minus,
-  Maximize2,
-  Video,
-  Star,
-  Code,
-  Layout,
-  Type,
-  PlayCircle,
-  Sparkles,
-  Megaphone,
-  ListChecks,
-  Activity,
-  Quote,
-  Map,
+    Activity,
+    AlignLeft,
+    Code,
+    Columns,
+    Heading,
+    Image,
+    Layout,
+    ListChecks,
+    Map,
+    Maximize2,
+    Megaphone,
+    Minus,
+    MousePointer,
+    PlayCircle,
+    Quote,
+    Sparkles,
+    Square,
+    Star,
+    Type,
+    Video,
 } from 'lucide-react';
+import { ELEMENT_CATEGORIES, type ElementType } from '../../lib/page-builder/types';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   square: Square,
@@ -73,11 +73,7 @@ export function ElementLibrary({ onAddElement }: ElementLibraryProps) {
                   name={element.name}
                   icon={element.icon}
                   description={element.description}
-                  onAdd={() => {
-                    if (element.type === 'section') {
-                      onAddElement(element.type);
-                    }
-                  }}
+                  onAdd={() => onAddElement(element.type)}
                 />
               ))}
             </div>

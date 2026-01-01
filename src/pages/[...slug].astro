@@ -1,0 +1,104 @@
+---
+import { PageRenderer } from "../components/page-builder/PageRenderer";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { getDatabase } from "../lib/cms/database";
+import { initPlugins, processContent } from "../lib/cms/plugins";
+
+await initPlugins();
+
+const { slug } = Astro.params;
+
+// Handle root slug
+const pageSlug = slug || "index";
+
+// Skip if it's a known static route or directory
+if (
+  pageSlug.startsWith("admin") ||
+  pageSlug.startsWith("api") ||
+  pageSlug.startsWith("_")
+) {
+  return Astro.redirect("/404");
+}
+
+const db = await getDatabase();
+const page = await db.getPageBySlug(pageSlug);
+
+if (!page) {
+  // If it's the index page and not found in DB, let index.astro handle it
+  if (pageSlug === "index") {
+    return;
+  }
+  return Astro.redirect("/404");
+}
+
+let builderData = null;
+try {
+  if (page.content && page.content.startsWith("{")) {
+    const parsed = JSON.parse(page.content);
+    if (parsed.version && parsed.rootElements && parsed.elements) {
+      builderData = parsed;
+    }
+  }
+} catch (e) {
+  console.error("Error parsing page content:", e);
+}
+
+const processedHtml = !builderData ? processContent(page.content) : "";
+---
+
+<SiteLayout title={page.title} description={page.description}>
+  {
+    page.featured_image && (
+      <div class="relative h-[40vh] min-h-[300px] w-full overflow-hidden">
+        <img
+          src={page.featured_image}
+          alt={page.title}
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent" />
+        <div class="absolute bottom-0 left-0 right-0 p-8 max-w-6xl mx-auto">
+          <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">
+            {page.title}
+          </h1>
+          {page.description && (
+            <p class="text-xl text-slate-300 max-w-2xl">{page.description}</p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  <main class={page.featured_image ? "py-12" : "py-24"}>
+    <div class={builderData ? "" : "max-w-4xl mx-auto px-4 sm:px-6"}>
+      {
+        !page.featured_image && (
+          <div class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-100 mb-4">
+              {page.title}
+            </h1>
+            {page.description && (
+              <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+                {page.description}
+              </p>
+            )}
+            <div class="h-1 w-20 bg-emerald-500 mx-auto mt-8" />
+          </div>
+        )
+      }
+
+      {
+        builderData ? (
+          <div class="page-builder-content">
+            <PageRenderer client:load data={builderData} />
+            <Fragment set:html={processContent("")} />
+          </div>
+        ) : (
+          <div
+            class="prose prose-invert prose-emerald max-w-none"
+            set:html={processedHtml}
+          />
+        )
+      }
+    </div>
+  </main>
+</SiteLayout>

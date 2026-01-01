@@ -108,6 +108,18 @@ export interface Theme {
   settings: Record<string, unknown>;
 }
 
+export type PluginHook = 
+  | 'beforeRender' 
+  | 'afterRender' 
+  | 'afterBuild'
+  | 'onPageView'
+  | 'afterContent'
+  | 'onFormSubmit'
+  | 'injectHead'
+  | 'injectBodyStart'
+  | 'injectBodyEnd'
+  | 'transformContent';
+
 export interface Plugin {
   id: string;
   name: string;
@@ -115,14 +127,18 @@ export interface Plugin {
   author: string;
   description: string;
   enabled: boolean;
-  settings: Record<string, unknown>;
+  settings: Record<string, any>;
   hooks: PluginHook[];
 }
 
-export interface PluginHook {
+export interface PluginDefinition {
+  id: string;
   name: string;
-  priority: number;
-  callback: string;
+  version: string;
+  author: string;
+  description: string;
+  hooks: PluginHook[];
+  defaultSettings: Record<string, any>;
 }
 
 export interface MediaItem {

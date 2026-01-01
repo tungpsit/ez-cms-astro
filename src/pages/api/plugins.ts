@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
-import { getAllPlugins, togglePlugin, updatePluginSettings } from '../../lib/cms/plugins';
+import { getAllPlugins, initPlugins, togglePlugin, updatePluginSettings } from '../../lib/cms/plugins';
 
 export const GET: APIRoute = async () => {
   try {
+    await initPlugins();
     const plugins = getAllPlugins();
     return new Response(JSON.stringify({ plugins }), {
       status: 200,
@@ -18,6 +19,7 @@ export const GET: APIRoute = async () => {
 
 export const PUT: APIRoute = async ({ request }) => {
   try {
+    await initPlugins();
     const { pluginId, enabled, settings } = await request.json();
     
     if (!pluginId) {

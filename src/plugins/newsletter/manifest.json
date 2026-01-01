@@ -1,0 +1,13 @@
+{
+  "id": "newsletter",
+  "name": "Newsletter",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "Build your email list with customizable subscription forms.",
+  "hooks": ["afterContent"],
+  "defaultSettings": {
+    "provider": "internal",
+    "doubleOptIn": true,
+    "welcomeEmail": true
+  }
+}

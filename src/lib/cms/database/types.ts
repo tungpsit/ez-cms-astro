@@ -91,6 +91,7 @@ export interface DatabaseAdapter {
   // Posts
   getPosts(): Promise<Post[]>;
   getPost(id: string): Promise<Post | null>;
+  getPostBySlug(slug: string): Promise<Post | null>;
   createPost(data: Omit<Post, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; id?: string; error?: string }>;
   updatePost(id: string, data: Partial<Post>): Promise<{ success: boolean; error?: string }>;
   deletePost(id: string): Promise<{ success: boolean; error?: string }>;
@@ -98,6 +99,7 @@ export interface DatabaseAdapter {
   // Pages
   getPages(): Promise<Page[]>;
   getPage(id: string): Promise<Page | null>;
+  getPageBySlug(slug: string): Promise<Page | null>;
   createPage(data: Omit<Page, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; id?: string; error?: string }>;
   updatePage(id: string, data: Partial<Page>): Promise<{ success: boolean; error?: string }>;
   deletePage(id: string): Promise<{ success: boolean; error?: string }>;

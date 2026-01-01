@@ -1,0 +1,13 @@
+{
+  "id": "analytics",
+  "name": "Analytics",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "Track visitor statistics and page views with privacy-friendly analytics.",
+  "hooks": ["injectHead"],
+  "defaultSettings": {
+    "trackPageViews": true,
+    "trackClicks": false,
+    "anonymizeIP": true
+  }
+}

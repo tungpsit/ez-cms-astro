@@ -1,50 +1,73 @@
 ---
-import { getConfig } from '../../lib/cms/config';
+import { getConfig } from "../../lib/cms/config";
 
 const config = getConfig();
 
 const navItems = [
-  { label: 'Home', href: '/' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'About', href: '/about' },
-  { label: 'Admin', href: '/admin' },
+  { label: "Home", href: "/" },
+  { label: "Blog", href: "/blog" },
+  { label: "About", href: "/about" },
+  { label: "Admin", href: "/admin" },
 ];
 ---
 
-<header class="sticky top-0 z-50 border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
+<header
+  class="sticky top-0 z-50 border-b border-[var(--theme-border)] bg-[rgba(var(--theme-background-rgb),0.8)] backdrop-blur-xl"
+>
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
     <nav class="flex items-center justify-between h-16">
       <a href="/" class="flex items-center gap-3 group">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-accent)] flex items-center justify-center"
+        >
+          <svg
+            class="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"></path>
           </svg>
         </div>
-        <span class="text-xl font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">
+        <span
+          class="text-xl font-bold text-[var(--theme-text)] group-hover:text-[var(--theme-primary)] transition-colors"
+        >
           {config.siteName}
         </span>
       </a>
-      
+
       <ul class="hidden md:flex items-center gap-1">
-        {navItems.map(item => (
-          <li>
-            <a 
-              href={item.href} 
-              class="px-4 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-200"
-            >
-              {item.label}
-            </a>
-          </li>
-        ))}
+        {
+          navItems.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class="px-4 py-2 rounded-lg text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:bg-[rgba(var(--theme-text-rgb),0.05)] transition-all duration-200"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
       </ul>
 
       <div class="flex items-center gap-3">
-        <a 
-          href="/admin" 
-          class="btn btn-primary text-sm"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <a href="/admin" class="btn btn-primary text-sm">
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
           New Post
         </a>

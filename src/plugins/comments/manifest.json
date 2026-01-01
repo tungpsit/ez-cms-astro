@@ -1,0 +1,13 @@
+{
+  "id": "comments",
+  "name": "Comments",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "Enable commenting on your posts with moderation support.",
+  "hooks": ["afterContent"],
+  "defaultSettings": {
+    "moderation": true,
+    "allowAnonymous": false,
+    "nestingLevel": 3
+  }
+}

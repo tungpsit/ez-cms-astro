@@ -1,41 +1,42 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
 import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-  MeasuringStrategy,
+    closestCenter,
+    DndContext,
+    DragOverlay,
+    MeasuringStrategy,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    type DragOverEvent,
+    type DragStartEvent,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+    AlertCircle,
+    Check,
+    ExternalLink,
+    Eye,
+    Layers,
+    Monitor,
+    PanelLeft,
+    Plus,
+    Redo,
+    Save,
+    Settings,
+    Smartphone,
+    Tablet,
+    Undo,
+} from 'lucide-react';
 import { nanoid } from 'nanoid';
-import type { PageBuilderData, PageElement, ElementType } from '../../lib/page-builder/types';
-import { createDefaultElement, createEmptyPageBuilderData, ELEMENT_CATEGORIES } from '../../lib/page-builder/types';
-import { ElementLibrary } from './ElementLibrary';
+import { useCallback, useState } from 'react';
+import type { ElementType, PageBuilderData, PageElement } from '../../lib/page-builder/types';
+import { createDefaultElement, createEmptyPageBuilderData } from '../../lib/page-builder/types';
 import { Canvas } from './Canvas';
+import { ElementLibrary } from './ElementLibrary';
 import { ElementSettings } from './ElementSettings';
 import { ElementPreview } from './elements/ElementPreview';
-import { 
-  Layers, 
-  Settings, 
-  Eye, 
-  Save, 
-  Undo, 
-  Redo, 
-  Monitor, 
-  Tablet, 
-  Smartphone,
-  PanelLeft,
-  Plus,
-  Check,
-  AlertCircle,
-} from 'lucide-react';
 
 interface PageBuilderProps {
   pageId: string;
@@ -95,6 +96,58 @@ export function PageBuilder({ pageId, initialData, onSave }: PageBuilderProps) {
     const element = createDefaultElement(type, id);
 
     setData(prev => {
+      let targetParentId = parentId;
+      
+      // If no parentId provided, try to find a suitable parent based on selection
+      if (!targetParentId && type !== 'section') {
+        if (selectedElementId) {
+          const selected = prev.elements[selectedElementId];
+          if (selected) {
+            if (type === 'row') {
+              // Rows can only go into sections
+              if (selected.type === 'section') {
+                targetParentId = selectedElementId;
+              } else {
+                // Find parent section
+                for (const [key, el] of Object.entries(prev.elements)) {
+                  if (el.type === 'section' && 'children' in el && el.children.includes(selectedElementId)) {
+                    targetParentId = key;
+                    break;
+                  }
+                }
+              }
+            } else {
+              // Basic elements can only go into columns
+              if (selected.type === 'column') {
+                targetParentId = selectedElementId;
+              } else {
+                // Find parent column
+                for (const [key, el] of Object.entries(prev.elements)) {
+                  if (el.type === 'column' && 'children' in el && el.children.includes(selectedElementId)) {
+                    targetParentId = key;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        // If still no parent found, find the first suitable container
+        if (!targetParentId) {
+          if (type === 'row') {
+            targetParentId = prev.rootElements[0];
+          } else {
+            const firstRowId = prev.elements[prev.rootElements[0] || '']?.type === 'section' 
+              ? (prev.elements[prev.rootElements[0]] as any).children[0]
+              : null;
+            if (firstRowId) {
+              targetParentId = (prev.elements[firstRowId] as any).children[0];
+            }
+          }
+        }
+      }
+
       const newData = { ...prev, elements: { ...prev.elements, [id]: element } };
 
       if (type === 'section') {
@@ -103,13 +156,13 @@ export function PageBuilder({ pageId, initialData, onSave }: PageBuilderProps) {
         } else {
           newData.rootElements = [...prev.rootElements, id];
         }
-      } else if (type === 'row' && parentId) {
-        const parent = prev.elements[parentId];
+      } else if (type === 'row' && targetParentId) {
+        const parent = prev.elements[targetParentId];
         if (parent && 'children' in parent) {
           const newChildren = index !== undefined
             ? [...parent.children.slice(0, index), id, ...parent.children.slice(index)]
             : [...parent.children, id];
-          newData.elements[parentId] = { ...parent, children: newChildren };
+          newData.elements[targetParentId] = { ...parent, children: newChildren };
         }
         
         const col1Id = nanoid(10);
@@ -119,13 +172,13 @@ export function PageBuilder({ pageId, initialData, onSave }: PageBuilderProps) {
         newData.elements[col1Id] = col1;
         newData.elements[col2Id] = col2;
         (newData.elements[id] as any).children = [col1Id, col2Id];
-      } else if (parentId) {
-        const parent = prev.elements[parentId];
+      } else if (targetParentId) {
+        const parent = prev.elements[targetParentId];
         if (parent && 'children' in parent) {
           const newChildren = index !== undefined
             ? [...parent.children.slice(0, index), id, ...parent.children.slice(index)]
             : [...parent.children, id];
-          newData.elements[parentId] = { ...parent, children: newChildren };
+          newData.elements[targetParentId] = { ...parent, children: newChildren };
         }
       }
 
@@ -137,7 +190,7 @@ export function PageBuilder({ pageId, initialData, onSave }: PageBuilderProps) {
     if (type !== 'section' && type !== 'row') {
       setSidebarTab('settings');
     }
-  }, [pushHistory]);
+  }, [pushHistory, selectedElementId]);
 
   const updateElement = useCallback((id: string, updates: Partial<PageElement>) => {
     setData(prev => {
@@ -512,10 +565,21 @@ export function PageBuilder({ pageId, initialData, onSave }: PageBuilderProps) {
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
                 isPreview ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-slate-200'
               }`}
+              title="Toggle Preview Mode"
             >
               <Eye className="w-4 h-4" />
               Preview
             </button>
+            <a
+              href={`/${pageId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all"
+              title="View Public Page"
+            >
+              <ExternalLink className="w-4 h-4" />
+              View Page
+            </a>
             <button
               onClick={handleSave}
               disabled={isSaving}

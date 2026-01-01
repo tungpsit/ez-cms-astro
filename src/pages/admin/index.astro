@@ -1,23 +1,42 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getCollection } from 'astro:content';
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { getDatabase } from "../../lib/cms/database";
 
-const posts = await getCollection('posts');
-const pages = await getCollection('pages');
-const categories = await getCollection('categories');
+const db = await getDatabase();
+const posts = await db.getPosts();
+const pages = await db.getPages();
+const categories = await db.getCategories();
 
-const publishedPosts = posts.filter(p => !p.data.draft);
-const draftPosts = posts.filter(p => p.data.draft);
+const publishedPosts = posts.filter((p) => !p.draft);
+const draftPosts = posts.filter((p) => p.draft);
 
 const stats = [
-  { label: 'Total Posts', value: posts.length, icon: 'posts', color: 'emerald' },
-  { label: 'Published', value: publishedPosts.length, icon: 'check', color: 'cyan' },
-  { label: 'Drafts', value: draftPosts.length, icon: 'draft', color: 'amber' },
-  { label: 'Categories', value: categories.length, icon: 'categories', color: 'violet' },
+  {
+    label: "Total Posts",
+    value: posts.length,
+    icon: "posts",
+    color: "emerald",
+  },
+  {
+    label: "Published",
+    value: publishedPosts.length,
+    icon: "check",
+    color: "cyan",
+  },
+  { label: "Drafts", value: draftPosts.length, icon: "draft", color: "amber" },
+  {
+    label: "Categories",
+    value: categories.length,
+    icon: "categories",
+    color: "violet",
+  },
 ];
 
 const recentPosts = posts
-  .sort((a, b) => new Date(b.data.publishDate).getTime() - new Date(a.data.publishDate).getTime())
+  .sort(
+    (a, b) =>
+      new Date(b.publish_date).getTime() - new Date(a.publish_date).getTime(),
+  )
   .slice(0, 5);
 
 const icons: Record<string, string> = {
@@ -36,61 +55,91 @@ const icons: Record<string, string> = {
         <p class="text-slate-400">Here's what's happening with your site</p>
       </div>
       <a href="/admin/posts/new" class="btn btn-primary">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
         </svg>
         New Post
       </a>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map(stat => (
-        <div class="card">
-          <div class="flex items-center gap-4">
-            <div class={`w-12 h-12 rounded-xl bg-${stat.color}-500/10 flex items-center justify-center`}>
-              <svg class={`w-6 h-6 text-${stat.color}-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={icons[stat.icon]} />
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-slate-100">{stat.value}</p>
-              <p class="text-sm text-slate-400">{stat.label}</p>
+      {
+        stats.map((stat) => (
+          <div class="card">
+            <div class="flex items-center gap-4">
+              <div
+                class={`w-12 h-12 rounded-xl bg-${stat.color}-500/10 flex items-center justify-center`}
+              >
+                <svg
+                  class={`w-6 h-6 text-${stat.color}-400`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  set:html={icons[stat.icon]}
+                />
+              </div>
+              <div>
+                <p class="text-2xl font-bold text-slate-100">{stat.value}</p>
+                <p class="text-sm text-slate-400">{stat.label}</p>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="card">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-slate-100">Recent Posts</h3>
-          <a href="/admin/posts" class="text-sm text-emerald-400 hover:text-emerald-300">View All</a>
+          <a
+            href="/admin/posts"
+            class="text-sm text-emerald-400 hover:text-emerald-300">View All</a
+          >
         </div>
-        
+
         <div class="space-y-3">
-          {recentPosts.length > 0 ? (
-            recentPosts.map(post => (
-              <a 
-                href={`/admin/posts/${post.id}`}
-                class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 transition-colors group"
-              >
-                <div class="flex items-center gap-3">
-                  <div class={`w-2 h-2 rounded-full ${post.data.draft ? 'bg-amber-400' : 'bg-emerald-400'}`}></div>
-                  <div>
-                    <p class="text-slate-100 group-hover:text-emerald-400 transition-colors font-medium">{post.data.title}</p>
-                    <p class="text-xs text-slate-500">{post.data.category}</p>
+          {
+            recentPosts.length > 0 ? (
+              recentPosts.map((post) => (
+                <a
+                  href={`/admin/posts/${post.id}`}
+                  class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 transition-colors group"
+                >
+                  <div class="flex items-center gap-3">
+                    <div
+                      class={`w-2 h-2 rounded-full ${post.draft ? "bg-amber-400" : "bg-emerald-400"}`}
+                    />
+                    <div>
+                      <p class="text-slate-100 group-hover:text-emerald-400 transition-colors font-medium">
+                        {post.title}
+                      </p>
+                      <p class="text-xs text-slate-500">{post.category}</p>
+                    </div>
                   </div>
-                </div>
-                <span class="text-xs text-slate-500">
-                  {new Date(post.data.publishDate).toLocaleDateString()}
-                </span>
-              </a>
-            ))
-          ) : (
-            <div class="text-center py-8 text-slate-500">
-              <p>No posts yet</p>
-              <a href="/admin/posts/new" class="text-emerald-400 text-sm">Create your first post</a>
-            </div>
-          )}
+                  <span class="text-xs text-slate-500">
+                    {new Date(post.publish_date).toLocaleDateString()}
+                  </span>
+                </a>
+              ))
+            ) : (
+              <div class="text-center py-8 text-slate-500">
+                <p>No posts yet</p>
+                <a href="/admin/posts/new" class="text-emerald-400 text-sm">
+                  Create your first post
+                </a>
+              </div>
+            )
+          }
         </div>
       </div>
 
@@ -98,12 +147,26 @@ const icons: Record<string, string> = {
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-slate-100">Quick Actions</h3>
         </div>
-        
+
         <div class="grid grid-cols-2 gap-3">
-          <a href="/admin/posts/new" class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group">
-            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <a
+            href="/admin/posts/new"
+            class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group"
+          >
+            <div
+              class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors"
+            >
+              <svg
+                class="w-5 h-5 text-emerald-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
             </div>
             <div>
@@ -112,10 +175,25 @@ const icons: Record<string, string> = {
             </div>
           </a>
 
-          <a href="/admin/pages" class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group">
-            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
-              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <a
+            href="/admin/pages"
+            class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group"
+          >
+            <div
+              class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors"
+            >
+              <svg
+                class="w-5 h-5 text-cyan-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
               </svg>
             </div>
             <div>
@@ -124,10 +202,25 @@ const icons: Record<string, string> = {
             </div>
           </a>
 
-          <a href="/admin/themes" class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group">
-            <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-              <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+          <a
+            href="/admin/themes"
+            class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group"
+          >
+            <div
+              class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors"
+            >
+              <svg
+                class="w-5 h-5 text-violet-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                ></path>
               </svg>
             </div>
             <div>
@@ -136,10 +229,25 @@ const icons: Record<string, string> = {
             </div>
           </a>
 
-          <a href="/admin/plugins" class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group">
-            <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" />
+          <a
+            href="/admin/plugins"
+            class="flex items-center gap-3 p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group"
+          >
+            <div
+              class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors"
+            >
+              <svg
+                class="w-5 h-5 text-amber-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"
+                ></path>
               </svg>
             </div>
             <div>

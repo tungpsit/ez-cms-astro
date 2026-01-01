@@ -1,7 +1,7 @@
-import type { DatabaseAdapter, Category, Post, Page, Author, Menu, User, Media } from './types';
 import { nanoid } from 'nanoid';
+import type { Author, Category, DatabaseAdapter, Media, Menu, Page, Post, User } from './types';
 
-let Database: typeof import('better-sqlite3').default;
+let Database: any;
 
 export class SqliteAdapter implements DatabaseAdapter {
   private db: import('better-sqlite3').Database | null = null;
@@ -27,7 +27,9 @@ export class SqliteAdapter implements DatabaseAdapter {
     }
     
     this.db = new Database(this.filename);
-    this.db.pragma('journal_mode = WAL');
+    if (this.db) {
+      this.db.pragma('journal_mode = WAL');
+    }
     
     this.createTables();
   }
@@ -212,6 +214,19 @@ export class SqliteAdapter implements DatabaseAdapter {
     } as Post;
   }
 
+  async getPostBySlug(slug: string): Promise<Post | null> {
+    const db = this.getDb();
+    const row = db.prepare('SELECT * FROM posts WHERE slug = ?').get(slug) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      ...row,
+      tags: JSON.parse(row.tags as string || '[]'),
+      draft: Boolean(row.draft),
+      publish_date: new Date(row.publish_date as string),
+      updated_date: row.updated_date ? new Date(row.updated_date as string) : undefined,
+    } as Post;
+  }
+
   async createPost(data: Omit<Post, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
       const db = this.getDb();
@@ -277,6 +292,18 @@ export class SqliteAdapter implements DatabaseAdapter {
   async getPage(id: string): Promise<Page | null> {
     const db = this.getDb();
     const row = db.prepare('SELECT * FROM pages WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      ...row,
+      draft: Boolean(row.draft),
+      publish_date: new Date(row.publish_date as string),
+      updated_date: row.updated_date ? new Date(row.updated_date as string) : undefined,
+    } as Page;
+  }
+
+  async getPageBySlug(slug: string): Promise<Page | null> {
+    const db = this.getDb();
+    const row = db.prepare('SELECT * FROM pages WHERE slug = ?').get(slug) as Record<string, unknown> | undefined;
     if (!row) return null;
     return {
       ...row,
