@@ -1,0 +1,21 @@
+{
+  "siteName": "EZ CMS",
+  "siteUrl": "http://localhost:4321",
+  "siteDescription": "A powerful and flexible CMS built with Astro",
+  "logo": "",
+  "favicon": "/favicon.svg",
+  "language": "en",
+  "timezone": "UTC",
+  "postsPerPage": 10,
+  "dateFormat": "MMMM dd, yyyy",
+  "seo": {
+    "defaultMetaTitle": "EZ CMS",
+    "defaultMetaDescription": "A powerful and flexible CMS built with Astro",
+    "googleAnalyticsId": ""
+  },
+  "social": {
+    "twitter": "",
+    "github": "",
+    "linkedin": ""
+  }
+}

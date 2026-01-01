@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import { PageBuilder } from '../../../../components/page-builder/PageBuilder';
+import { getDatabase } from '../../../../lib/cms/database';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/pages');
+}
+
+const db = await getDatabase();
+const page = await db.getPage(id);
+
+if (!page) {
+  return Astro.redirect('/admin/pages');
+}
+
+let initialData = null;
+try {
+  if (page.content && page.content.startsWith('{')) {
+    const parsed = JSON.parse(page.content);
+    if (parsed.version && parsed.rootElements && parsed.elements) {
+      initialData = parsed;
+    }
+  }
+} catch {}
+---
+
+<BaseLayout title={`Page Builder: ${page.title}`}>
+  <div id="page-builder-root" data-page-id={id} data-initial={initialData ? JSON.stringify(initialData) : ''}>
+    <PageBuilder client:only="react" pageId={id} initialData={initialData} />
+  </div>
+</BaseLayout>
+
+<style is:global>
+  body {
+    overflow: hidden;
+  }
+  #page-builder-root {
+    height: 100vh;
+  }
+</style>
+
+<script>
+  const root = document.getElementById('page-builder-root');
+  if (root) {
+    const pageId = root.dataset.pageId;
+    
+    window.savePageBuilder = async (data: unknown) => {
+      const response = await fetch(`/api/page-builder/${pageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save');
+      }
+    };
+  }
+</script>

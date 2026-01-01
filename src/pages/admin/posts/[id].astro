@@ -1,0 +1,92 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getCollection, render } from 'astro:content';
+import PostEditor from '../../../components/admin/PostEditor';
+
+const { id } = Astro.params;
+const posts = await getCollection('posts');
+const post = posts.find(p => p.id === id);
+const categories = await getCollection('categories');
+const categoryData = categories.map(c => ({ name: c.data.name, slug: c.data.slug }));
+
+if (!post) {
+  return Astro.redirect('/admin/posts');
+}
+
+const { Content } = await render(post);
+---
+
+<AdminLayout title={`Edit: ${post.data.title}`}>
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <a href="/admin/posts" class="flex items-center gap-2 text-slate-400 hover:text-slate-100 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Posts
+      </a>
+      <button 
+        id="delete-btn"
+        class="btn bg-red-500/10 text-red-400 hover:bg-red-500/20"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+
+    <PostEditor 
+      client:load 
+      categories={categoryData}
+      isEditing={true}
+      postId={id}
+      initialData={{
+        title: post.data.title,
+        description: post.data.description,
+        content: post.body || '',
+        category: post.data.category,
+        tags: post.data.tags,
+        featuredImage: post.data.featuredImage,
+        author: post.data.author,
+        draft: post.data.draft,
+      }}
+    />
+  </div>
+
+  <dialog id="delete-modal" class="bg-slate-900 rounded-xl p-6 border border-slate-800 backdrop:bg-slate-950/80">
+    <h3 class="text-lg font-semibold text-slate-100 mb-2">Delete Post</h3>
+    <p class="text-slate-400 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
+    <div class="flex gap-3 justify-end">
+      <button id="cancel-delete" class="btn bg-slate-800 text-slate-300 hover:bg-slate-700">Cancel</button>
+      <button id="confirm-delete" class="btn bg-red-500 text-white hover:bg-red-600">Delete</button>
+    </div>
+  </dialog>
+</AdminLayout>
+
+<script define:vars={{ postId: id }}>
+  const deleteBtn = document.getElementById('delete-btn');
+  const deleteModal = document.getElementById('delete-modal');
+  const cancelDelete = document.getElementById('cancel-delete');
+  const confirmDelete = document.getElementById('confirm-delete');
+  
+  deleteBtn?.addEventListener('click', () => deleteModal?.showModal());
+  cancelDelete?.addEventListener('click', () => deleteModal?.close());
+  
+  confirmDelete?.addEventListener('click', async () => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      const result = await res.json();
+      
+      if (result.success) {
+        window.location.href = '/admin/posts';
+      } else {
+        alert(result.error || 'Failed to delete post');
+        deleteModal?.close();
+      }
+    } catch (err) {
+      alert('An error occurred');
+      deleteModal?.close();
+    }
+  });
+</script>

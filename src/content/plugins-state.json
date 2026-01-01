@@ -1,0 +1,53 @@
+{
+  "seo-optimizer": {
+    "enabled": true,
+    "settings": {
+      "autoGenerateMetaTags": true,
+      "generateSitemap": true,
+      "enableOpenGraph": true
+    }
+  },
+  "analytics": {
+    "enabled": true,
+    "settings": {
+      "trackPageViews": true,
+      "trackClicks": false,
+      "anonymizeIP": true
+    }
+  },
+  "social-sharing": {
+    "enabled": true,
+    "settings": {
+      "platforms": [
+        "twitter",
+        "facebook",
+        "linkedin"
+      ],
+      "position": "bottom"
+    }
+  },
+  "comments": {
+    "enabled": true,
+    "settings": {
+      "moderation": true,
+      "allowAnonymous": false,
+      "nestingLevel": 3
+    }
+  },
+  "newsletter": {
+    "enabled": false,
+    "settings": {
+      "provider": "internal",
+      "doubleOptIn": true,
+      "welcomeEmail": true
+    }
+  },
+  "code-highlighter": {
+    "enabled": true,
+    "settings": {
+      "theme": "dracula",
+      "lineNumbers": true,
+      "copyButton": true
+    }
+  }
+}

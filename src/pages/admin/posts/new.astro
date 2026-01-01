@@ -1,0 +1,27 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getCollection } from 'astro:content';
+import PostEditor from '../../../components/admin/PostEditor';
+
+const categories = await getCollection('categories');
+const categoryData = categories.map(c => ({ name: c.data.name, slug: c.data.slug }));
+---
+
+<AdminLayout title="New Post">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <a href="/admin/posts" class="flex items-center gap-2 text-slate-400 hover:text-slate-100 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Posts
+      </a>
+    </div>
+
+    <PostEditor 
+      client:load 
+      categories={categoryData}
+      isEditing={false}
+    />
+  </div>
+</AdminLayout>

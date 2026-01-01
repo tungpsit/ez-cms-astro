@@ -1,0 +1,10 @@
+{
+  "name": "Admin",
+  "email": "admin@ezcms.dev",
+  "bio": "Site administrator and content manager",
+  "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
+  "social": {
+    "twitter": "https://twitter.com/ezcms",
+    "github": "https://github.com/ezcms"
+  }
+}

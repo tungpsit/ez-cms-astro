@@ -1,0 +1,91 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { getCollection } from 'astro:content';
+import { formatDateString } from '../../lib/cms/utils';
+
+const posts = await getCollection('posts', ({ data }) => !data.draft);
+const sortedPosts = posts.sort((a, b) => 
+  new Date(b.data.publishDate).getTime() - new Date(a.data.publishDate).getTime()
+);
+
+const categories = [...new Set(posts.map(post => post.data.category))];
+---
+
+<SiteLayout title="Blog">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <div class="mb-12">
+      <h1 class="text-3xl md:text-4xl font-bold text-slate-100 mb-4">Blog</h1>
+      <p class="text-slate-400 text-lg">Explore our latest articles and tutorials</p>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-8">
+      <button class="px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-400 text-sm font-medium border border-emerald-500/20">
+        All Posts
+      </button>
+      {categories.map(category => (
+        <button class="px-4 py-2 rounded-full bg-slate-800/50 text-slate-400 hover:text-slate-100 text-sm font-medium border border-slate-700 hover:border-slate-600 transition-colors">
+          {category}
+        </button>
+      ))}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {sortedPosts.map((post, index) => (
+        <a 
+          href={`/blog/${post.id}`}
+          class="card group hover:border-emerald-500/30 transition-all duration-300 animate-slide-up"
+          style={`animation-delay: ${index * 50}ms`}
+        >
+          {post.data.featuredImage && (
+            <div class="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-xl">
+              <img 
+                src={post.data.featuredImage} 
+                alt={post.data.title}
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+            </div>
+          )}
+          
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
+              {post.data.category}
+            </span>
+            <span class="text-slate-500 text-sm">
+              {formatDateString(post.data.publishDate)}
+            </span>
+          </div>
+          
+          <h2 class="text-lg font-semibold text-slate-100 group-hover:text-emerald-400 transition-colors mb-2">
+            {post.data.title}
+          </h2>
+          
+          {post.data.description && (
+            <p class="text-slate-400 text-sm line-clamp-2">{post.data.description}</p>
+          )}
+
+          {post.data.tags && post.data.tags.length > 0 && (
+            <div class="flex flex-wrap gap-2 mt-4">
+              {post.data.tags.slice(0, 3).map(tag => (
+                <span class="text-xs text-slate-500">#{tag}</span>
+              ))}
+            </div>
+          )}
+        </a>
+      ))}
+    </div>
+
+    {sortedPosts.length === 0 && (
+      <div class="text-center py-16">
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-100 mb-2">No posts yet</h3>
+        <p class="text-slate-400 mb-4">Start creating content in the admin panel</p>
+        <a href="/admin/posts" class="btn btn-primary">Create First Post</a>
+      </div>
+    )}
+  </div>
+</SiteLayout>

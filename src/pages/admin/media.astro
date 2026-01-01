@@ -1,0 +1,384 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Media Library">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p id="file-count" class="text-slate-400">Loading...</p>
+      </div>
+      <button id="upload-btn" class="btn btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        Upload Files
+      </button>
+    </div>
+
+    <div class="card p-4">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="relative flex-1">
+          <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="search-input" class="input pl-10 w-full" placeholder="Search media..." />
+        </div>
+        <select id="type-filter" class="input w-40">
+          <option value="">All Types</option>
+          <option value="image">Images</option>
+          <option value="video">Videos</option>
+          <option value="document">Documents</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="media-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div class="card p-0 overflow-hidden border-dashed border-slate-700 bg-transparent">
+        <label id="drop-zone" class="aspect-square flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800/30 transition-colors">
+          <svg class="w-8 h-8 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <span class="text-sm text-slate-500">Upload</span>
+          <input type="file" id="file-input" class="hidden" multiple accept="image/*,video/*,.pdf,.doc,.docx" />
+        </label>
+      </div>
+    </div>
+
+    <div id="empty-state" class="hidden card text-center py-16">
+      <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-100 mb-2">No media files yet</h3>
+      <p class="text-slate-400 mb-4">Upload images, videos, or documents to get started</p>
+    </div>
+  </div>
+
+  <dialog id="preview-modal" class="bg-slate-900 rounded-xl p-6 border border-slate-800 backdrop:bg-slate-950/80 max-w-4xl w-full">
+    <div class="flex items-center justify-between mb-4">
+      <h3 id="preview-title" class="text-lg font-semibold text-slate-100"></h3>
+      <button id="close-preview" class="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div id="preview-content" class="mb-4"></div>
+    <div class="flex items-center justify-between">
+      <div class="text-sm text-slate-400">
+        <span id="preview-size"></span> · 
+        <span id="preview-date"></span>
+      </div>
+      <div class="flex gap-2">
+        <button id="copy-url-btn" class="btn bg-slate-800 text-slate-300 hover:bg-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy URL
+        </button>
+        <button id="delete-preview-btn" class="btn bg-red-500/10 text-red-400 hover:bg-red-500/20">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="delete-modal" class="bg-slate-900 rounded-xl p-6 border border-slate-800 backdrop:bg-slate-950/80">
+    <h3 class="text-lg font-semibold text-slate-100 mb-2">Delete File</h3>
+    <p class="text-slate-400 mb-6">Are you sure you want to delete "<span id="delete-name"></span>"?</p>
+    <div class="flex gap-3 justify-end">
+      <button id="cancel-delete" class="btn bg-slate-800 text-slate-300 hover:bg-slate-700">Cancel</button>
+      <button id="confirm-delete" class="btn bg-red-500 text-white hover:bg-red-600">Delete</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="fixed bottom-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300"></div>
+  
+  <div id="upload-progress" class="fixed bottom-4 left-4 bg-slate-900 border border-slate-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="flex items-center gap-3">
+      <svg class="w-5 h-5 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span>Uploading...</span>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  interface MediaFile {
+    name: string;
+    url: string;
+    size: number;
+    modified: string;
+  }
+
+  const mediaGrid = document.getElementById('media-grid') as HTMLElement;
+  const fileCount = document.getElementById('file-count') as HTMLElement;
+  const emptyState = document.getElementById('empty-state') as HTMLElement;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const dropZone = document.getElementById('drop-zone') as HTMLElement;
+  const uploadBtn = document.getElementById('upload-btn') as HTMLButtonElement;
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const typeFilter = document.getElementById('type-filter') as HTMLSelectElement;
+  const previewModal = document.getElementById('preview-modal') as HTMLDialogElement;
+  const deleteModal = document.getElementById('delete-modal') as HTMLDialogElement;
+  const toast = document.getElementById('toast') as HTMLElement;
+  const uploadProgress = document.getElementById('upload-progress') as HTMLElement;
+
+  let allMedia: MediaFile[] = [];
+  let currentFile: MediaFile | null = null;
+
+  function showToast(message: string, isError = false) {
+    toast.textContent = message;
+    toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-red-500' : 'bg-emerald-500'} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300`;
+    setTimeout(() => {
+      toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-red-500' : 'bg-emerald-500'} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300`;
+    }, 3000);
+  }
+
+  function formatSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function getFileType(name: string): string {
+    const ext = name.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+    if (['mp4', 'webm', 'mov'].includes(ext)) return 'video';
+    return 'document';
+  }
+
+  function isImage(name: string): boolean {
+    return getFileType(name) === 'image';
+  }
+
+  function renderMedia(files: MediaFile[]) {
+    const uploadCard = mediaGrid.querySelector('.border-dashed');
+    mediaGrid.innerHTML = '';
+    if (uploadCard) mediaGrid.appendChild(uploadCard);
+
+    if (files.length === 0) {
+      emptyState.classList.remove('hidden');
+      fileCount.textContent = '0 files in library';
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+    fileCount.textContent = `${files.length} files in library`;
+
+    files.forEach(file => {
+      const card = document.createElement('div');
+      card.className = 'card p-0 overflow-hidden group cursor-pointer hover:border-emerald-500/30 transition-all';
+      card.innerHTML = `
+        <div class="aspect-square relative overflow-hidden bg-slate-800">
+          ${isImage(file.name) 
+            ? `<img src="${file.url}" alt="${file.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />`
+            : `<div class="w-full h-full flex items-center justify-center">
+                <svg class="w-12 h-12 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>`
+          }
+          <div class="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button class="view-btn p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+            <button class="copy-btn p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button class="delete-btn p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="p-3">
+          <p class="text-sm text-slate-100 truncate">${file.name}</p>
+          <p class="text-xs text-slate-500">${formatSize(file.size)}</p>
+        </div>
+      `;
+
+      card.querySelector('.view-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPreview(file);
+      });
+
+      card.querySelector('.copy-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(window.location.origin + file.url);
+        showToast('URL copied!');
+      });
+
+      card.querySelector('.delete-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDeleteModal(file);
+      });
+
+      card.addEventListener('click', () => openPreview(file));
+
+      mediaGrid.insertBefore(card, uploadCard);
+    });
+  }
+
+  function openPreview(file: MediaFile) {
+    currentFile = file;
+    (document.getElementById('preview-title') as HTMLElement).textContent = file.name;
+    (document.getElementById('preview-size') as HTMLElement).textContent = formatSize(file.size);
+    (document.getElementById('preview-date') as HTMLElement).textContent = new Date(file.modified).toLocaleDateString();
+    
+    const content = document.getElementById('preview-content') as HTMLElement;
+    if (isImage(file.name)) {
+      content.innerHTML = `<img src="${file.url}" alt="${file.name}" class="max-h-[60vh] mx-auto rounded-lg" />`;
+    } else {
+      content.innerHTML = `
+        <div class="flex items-center justify-center py-12 bg-slate-800 rounded-lg">
+          <svg class="w-16 h-16 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+      `;
+    }
+    previewModal.showModal();
+  }
+
+  function openDeleteModal(file: MediaFile) {
+    currentFile = file;
+    (document.getElementById('delete-name') as HTMLElement).textContent = file.name;
+    deleteModal.showModal();
+  }
+
+  async function loadMedia() {
+    try {
+      const res = await fetch('/api/media');
+      const data = await res.json();
+      allMedia = data.files || [];
+      filterMedia();
+    } catch (err) {
+      showToast('Failed to load media', true);
+    }
+  }
+
+  function filterMedia() {
+    const search = searchInput.value.toLowerCase();
+    const type = typeFilter.value;
+    
+    const filtered = allMedia.filter(file => {
+      const matchSearch = file.name.toLowerCase().includes(search);
+      const matchType = !type || getFileType(file.name) === type;
+      return matchSearch && matchType;
+    });
+    
+    renderMedia(filtered);
+  }
+
+  async function uploadFiles(files: FileList) {
+    uploadProgress.classList.remove('translate-y-20', 'opacity-0');
+    uploadProgress.classList.add('translate-y-0', 'opacity-100');
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/media', {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await res.json();
+        if (!result.success) {
+          showToast(`Failed to upload ${file.name}`, true);
+        }
+      } catch (err) {
+        showToast(`Failed to upload ${file.name}`, true);
+      }
+    }
+
+    uploadProgress.classList.add('translate-y-20', 'opacity-0');
+    uploadProgress.classList.remove('translate-y-0', 'opacity-100');
+    showToast('Upload complete!');
+    loadMedia();
+  }
+
+  async function deleteFile(name: string) {
+    try {
+      const res = await fetch(`/api/media/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (result.success) {
+        showToast('File deleted!');
+        loadMedia();
+      } else {
+        showToast(result.error || 'Failed to delete', true);
+      }
+    } catch (err) {
+      showToast('Failed to delete', true);
+    }
+  }
+
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files?.length) {
+      uploadFiles(fileInput.files);
+      fileInput.value = '';
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('bg-slate-800/50');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('bg-slate-800/50');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('bg-slate-800/50');
+    if (e.dataTransfer?.files.length) {
+      uploadFiles(e.dataTransfer.files);
+    }
+  });
+
+  searchInput.addEventListener('input', filterMedia);
+  typeFilter.addEventListener('change', filterMedia);
+
+  document.getElementById('close-preview')?.addEventListener('click', () => previewModal.close());
+  document.getElementById('cancel-delete')?.addEventListener('click', () => deleteModal.close());
+
+  document.getElementById('copy-url-btn')?.addEventListener('click', () => {
+    if (currentFile) {
+      navigator.clipboard.writeText(window.location.origin + currentFile.url);
+      showToast('URL copied!');
+    }
+  });
+
+  document.getElementById('delete-preview-btn')?.addEventListener('click', () => {
+    previewModal.close();
+    if (currentFile) openDeleteModal(currentFile);
+  });
+
+  document.getElementById('confirm-delete')?.addEventListener('click', async () => {
+    if (currentFile) {
+      await deleteFile(currentFile.name);
+      deleteModal.close();
+      previewModal.close();
+    }
+  });
+
+  loadMedia();
+</script>

@@ -1,0 +1,85 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getFieldGroups } from '../../../lib/acf/store';
+
+const fieldGroups = await getFieldGroups();
+---
+
+<AdminLayout title="Custom Fields">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400">{fieldGroups.length} field groups</p>
+      </div>
+      <a href="/admin/field-groups/new" class="btn btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        Add Field Group
+      </a>
+    </div>
+
+    <div class="card overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-slate-800">
+            <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Title</th>
+            <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Location</th>
+            <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Fields</th>
+            <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Status</th>
+            <th class="text-right px-4 py-3 text-sm font-medium text-slate-400">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fieldGroups.map(group => (
+            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30">
+              <td class="px-4 py-3">
+                <a href={`/admin/field-groups/${group.id}`} class="text-slate-100 hover:text-emerald-400 font-medium">
+                  {group.title}
+                </a>
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-400">
+                {group.location.map(loc => `${loc.param} ${loc.operator} ${loc.value}`).join(', ')}
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-400">
+                {group.fields.length} fields
+              </td>
+              <td class="px-4 py-3">
+                {group.active ? (
+                  <span class="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
+                    Active
+                  </span>
+                ) : (
+                  <span class="px-2 py-1 rounded-full bg-slate-500/10 text-slate-400 text-xs font-medium">
+                    Inactive
+                  </span>
+                )}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a 
+                  href={`/admin/field-groups/${group.id}`}
+                  class="text-sm text-slate-400 hover:text-emerald-400"
+                >
+                  Edit
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      
+      {fieldGroups.length === 0 && (
+        <div class="text-center py-16">
+          <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-100 mb-2">No field groups yet</h3>
+          <p class="text-slate-400 mb-4">Create custom fields to add extra data to your pages and posts</p>
+          <a href="/admin/field-groups/new" class="btn btn-primary">Add Field Group</a>
+        </div>
+      )}
+    </div>
+  </div>
+</AdminLayout>

@@ -1,0 +1,26 @@
+{
+  "name": "Main Navigation",
+  "location": "header",
+  "items": [
+    {
+      "label": "Home",
+      "url": "/",
+      "target": "_self"
+    },
+    {
+      "label": "Blog",
+      "url": "/blog",
+      "target": "_self"
+    },
+    {
+      "label": "About",
+      "url": "/about",
+      "target": "_self"
+    },
+    {
+      "label": "Admin",
+      "url": "/admin",
+      "target": "_self"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "admin-001",
+    "username": "admin",
+    "email": "admin@ezcms.dev",
+    "displayName": "Administrator",
+    "role": "administrator",
+    "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
+    "bio": "Site administrator",
+    "createdAt": "2025-12-11T07:13:40.829Z",
+    "isActive": true
+  },
+  {
+    "username": "tung",
+    "email": "tungps.it9+contributor@gmail.com",
+    "displayName": "tung contributor",
+    "role": "contributor",
+    "avatar": "",
+    "bio": "",
+    "id": "3YqlcS6RRn",
+    "createdAt": "2025-12-11T07:46:22.866Z",
+    "isActive": true
+  }
+]
