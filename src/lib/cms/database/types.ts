@@ -77,6 +77,33 @@ export interface Media {
   created_at?: Date;
 }
 
+export interface ContactForm {
+  id: string;
+  title: string;
+  slug: string;
+  fields: string; // JSON string of FormField[]
+  mail_settings: string; // JSON string of MailSettings
+  messages: string; // JSON string of FormMessages
+  submit_button_text: string;
+  css_class: string;
+  honeypot: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export type SubmissionStatus = 'new' | 'read' | 'replied' | 'spam' | 'trash';
+
+export interface FormSubmission {
+  id: string;
+  form_id: string;
+  form_title: string;
+  data: string; // JSON string of submission data
+  status: SubmissionStatus;
+  ip_address: string;
+  user_agent: string;
+  created_at?: Date;
+}
+
 export interface DatabaseAdapter {
   init(): Promise<void>;
   close(): Promise<void>;
@@ -130,6 +157,21 @@ export interface DatabaseAdapter {
   getMediaFiles(): Promise<Media[]>;
   createMedia(data: Omit<Media, 'id' | 'created_at'>): Promise<{ success: boolean; id?: string; error?: string }>;
   deleteMedia(id: string): Promise<{ success: boolean; error?: string }>;
+  
+  // Contact Forms
+  getContactForms(): Promise<ContactForm[]>;
+  getContactForm(id: string): Promise<ContactForm | null>;
+  getContactFormBySlug(slug: string): Promise<ContactForm | null>;
+  createContactForm(data: Omit<ContactForm, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; id?: string; error?: string }>;
+  updateContactForm(id: string, data: Partial<ContactForm>): Promise<{ success: boolean; error?: string }>;
+  deleteContactForm(id: string): Promise<{ success: boolean; error?: string }>;
+  
+  // Form Submissions
+  getFormSubmissions(formId?: string): Promise<FormSubmission[]>;
+  getFormSubmission(id: string): Promise<FormSubmission | null>;
+  createFormSubmission(data: Omit<FormSubmission, 'id' | 'created_at'>): Promise<{ success: boolean; id?: string; error?: string }>;
+  updateFormSubmission(id: string, data: Partial<FormSubmission>): Promise<{ success: boolean; error?: string }>;
+  deleteFormSubmission(id: string): Promise<{ success: boolean; error?: string }>;
 }
 
 export type DatabaseType = 'sqlite' | 'mysql' | 'postgresql';

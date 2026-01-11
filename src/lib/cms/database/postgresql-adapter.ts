@@ -1,19 +1,20 @@
-import type { DatabaseAdapter, Category, Post, Page, Author, Menu, User, Media } from './types';
 import { nanoid } from 'nanoid';
+import type { Author, Category, ContactForm, DatabaseAdapter, FormSubmission, Media, Menu, Page, Post, User } from './types';
 
 type PgPool = import('pg').Pool;
 
 export class PostgresqlAdapter implements DatabaseAdapter {
   private pool: PgPool | null = null;
   private config: {
-    host: string;
-    port: number;
-    user: string;
-    password: string;
-    database: string;
+    host?: string;
+    port?: number;
+    user?: string;
+    password?: string;
+    database?: string;
+    connectionString?: string;
   };
 
-  constructor(config: { host: string; port: number; user: string; password: string; database: string }) {
+  constructor(config: { host?: string; port?: number; user?: string; password?: string; database?: string; connectionString?: string }) {
     this.config = config;
   }
 
@@ -22,6 +23,7 @@ export class PostgresqlAdapter implements DatabaseAdapter {
     this.pool = new Pool({
       ...this.config,
       max: 10,
+      ssl: this.config.connectionString ? { rejectUnauthorized: false } : false,
     });
     
     await this.createTables();
@@ -119,6 +121,35 @@ export class PostgresqlAdapter implements DatabaseAdapter {
         url VARCHAR(500) NOT NULL,
         size INTEGER DEFAULT 0,
         mime_type VARCHAR(100) DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS contact_forms (
+        id VARCHAR(50) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        fields JSONB DEFAULT '[]',
+        mail_settings JSONB DEFAULT '{}',
+        messages JSONB DEFAULT '{}',
+        submit_button_text VARCHAR(100) DEFAULT 'Send Message',
+        css_class VARCHAR(100) DEFAULT '',
+        honeypot BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS form_submissions (
+        id VARCHAR(50) PRIMARY KEY,
+        form_id VARCHAR(50) NOT NULL REFERENCES contact_forms(id) ON DELETE CASCADE,
+        form_title VARCHAR(255) NOT NULL,
+        data JSONB DEFAULT '{}',
+        status VARCHAR(20) DEFAULT 'new',
+        ip_address VARCHAR(45) DEFAULT '',
+        user_agent TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -507,6 +538,172 @@ export class PostgresqlAdapter implements DatabaseAdapter {
   async deleteMedia(id: string): Promise<{ success: boolean; error?: string }> {
     try {
       await this.getPool().query('DELETE FROM media WHERE id = $1', [id]);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  // Contact Forms
+  async getContactForms(): Promise<ContactForm[]> {
+    const result = await this.getPool().query('SELECT * FROM contact_forms ORDER BY created_at DESC');
+    return result.rows.map(row => ({
+      ...row,
+      fields: typeof row.fields === 'string' ? row.fields : JSON.stringify(row.fields || []),
+      mail_settings: typeof row.mail_settings === 'string' ? row.mail_settings : JSON.stringify(row.mail_settings || {}),
+      messages: typeof row.messages === 'string' ? row.messages : JSON.stringify(row.messages || {}),
+      honeypot: Boolean(row.honeypot),
+    })) as ContactForm[];
+  }
+
+  async getContactForm(id: string): Promise<ContactForm | null> {
+    const result = await this.getPool().query('SELECT * FROM contact_forms WHERE id = $1', [id]);
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      ...row,
+      fields: typeof row.fields === 'string' ? row.fields : JSON.stringify(row.fields || []),
+      mail_settings: typeof row.mail_settings === 'string' ? row.mail_settings : JSON.stringify(row.mail_settings || {}),
+      messages: typeof row.messages === 'string' ? row.messages : JSON.stringify(row.messages || {}),
+      honeypot: Boolean(row.honeypot),
+    } as ContactForm;
+  }
+
+  async getContactFormBySlug(slug: string): Promise<ContactForm | null> {
+    const result = await this.getPool().query('SELECT * FROM contact_forms WHERE slug = $1', [slug]);
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      ...row,
+      fields: typeof row.fields === 'string' ? row.fields : JSON.stringify(row.fields || []),
+      mail_settings: typeof row.mail_settings === 'string' ? row.mail_settings : JSON.stringify(row.mail_settings || {}),
+      messages: typeof row.messages === 'string' ? row.messages : JSON.stringify(row.messages || {}),
+      honeypot: Boolean(row.honeypot),
+    } as ContactForm;
+  }
+
+  async getPostBySlug(slug: string): Promise<Post | null> {
+    const result = await this.getPool().query('SELECT * FROM posts WHERE slug = $1', [slug]);
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      ...row,
+      tags: row.tags || [],
+      draft: Boolean(row.draft),
+      publish_date: new Date(row.publish_date),
+      updated_date: row.updated_date ? new Date(row.updated_date) : undefined,
+    } as Post;
+  }
+
+  async getPageBySlug(slug: string): Promise<Page | null> {
+    const result = await this.getPool().query('SELECT * FROM pages WHERE slug = $1', [slug]);
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      ...row,
+      draft: Boolean(row.draft),
+      publish_date: new Date(row.publish_date),
+      updated_date: row.updated_date ? new Date(row.updated_date) : undefined,
+    } as Page;
+  }
+
+  async createContactForm(data: Omit<ContactForm, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      const id = data.slug || nanoid(10);
+      await this.getPool().query(
+        `INSERT INTO contact_forms (id, title, slug, fields, mail_settings, messages, submit_button_text, css_class, honeypot)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [id, data.title, data.slug, data.fields || '[]', data.mail_settings || '{}',
+         data.messages || '{}', data.submit_button_text || 'Send Message', data.css_class || '', data.honeypot ?? true]
+      );
+      return { success: true, id };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async updateContactForm(id: string, data: Partial<ContactForm>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const existing = await this.getContactForm(id);
+      if (!existing) return { success: false, error: 'Form not found' };
+
+      await this.getPool().query(
+        `UPDATE contact_forms SET title = $1, slug = $2, fields = $3, mail_settings = $4, messages = $5,
+         submit_button_text = $6, css_class = $7, honeypot = $8, updated_at = CURRENT_TIMESTAMP WHERE id = $9`,
+        [data.title ?? existing.title, data.slug ?? existing.slug, data.fields ?? existing.fields,
+         data.mail_settings ?? existing.mail_settings, data.messages ?? existing.messages,
+         data.submit_button_text ?? existing.submit_button_text, data.css_class ?? existing.css_class,
+         data.honeypot ?? existing.honeypot, id]
+      );
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async deleteContactForm(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await this.getPool().query('DELETE FROM contact_forms WHERE id = $1', [id]);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  // Form Submissions
+  async getFormSubmissions(formId?: string): Promise<FormSubmission[]> {
+    if (formId) {
+      const result = await this.getPool().query('SELECT * FROM form_submissions WHERE form_id = $1 ORDER BY created_at DESC', [formId]);
+      return result.rows.map(row => ({
+        ...row,
+        data: typeof row.data === 'string' ? row.data : JSON.stringify(row.data || {}),
+      })) as FormSubmission[];
+    }
+    const result = await this.getPool().query('SELECT * FROM form_submissions ORDER BY created_at DESC');
+    return result.rows.map(row => ({
+      ...row,
+      data: typeof row.data === 'string' ? row.data : JSON.stringify(row.data || {}),
+    })) as FormSubmission[];
+  }
+
+  async getFormSubmission(id: string): Promise<FormSubmission | null> {
+    const result = await this.getPool().query('SELECT * FROM form_submissions WHERE id = $1', [id]);
+    if (!result.rows[0]) return null;
+    return {
+      ...result.rows[0],
+      data: typeof result.rows[0].data === 'string' ? result.rows[0].data : JSON.stringify(result.rows[0].data || {}),
+    } as FormSubmission;
+  }
+
+  async createFormSubmission(data: Omit<FormSubmission, 'id' | 'created_at'>): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      const id = nanoid(10);
+      await this.getPool().query(
+        `INSERT INTO form_submissions (id, form_id, form_title, data, status, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, data.form_id, data.form_title, data.data || '{}', data.status || 'new', data.ip_address || '', data.user_agent || '']
+      );
+      return { success: true, id };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async updateFormSubmission(id: string, data: Partial<FormSubmission>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const existing = await this.getFormSubmission(id);
+      if (!existing) return { success: false, error: 'Submission not found' };
+
+      await this.getPool().query('UPDATE form_submissions SET status = $1 WHERE id = $2', [data.status ?? existing.status, id]);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async deleteFormSubmission(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await this.getPool().query('DELETE FROM form_submissions WHERE id = $1', [id]);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };

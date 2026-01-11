@@ -1,0 +1,498 @@
+---
+import AdminLayout from "@layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="New Form">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center gap-4 mb-6">
+      <a href="/admin/forms" class="text-slate-400 hover:text-slate-100">
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <h1 class="text-2xl font-bold text-slate-100">Create New Form</h1>
+    </div>
+
+    <form id="form-builder" class="space-y-6">
+      <!-- Basic Info -->
+      <div class="card">
+        <h2 class="text-lg font-semibold text-slate-100 mb-4">
+          Basic Information
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Form Title</label
+            >
+            <input
+              type="text"
+              id="form-title"
+              class="input w-full"
+              placeholder="Contact Form"
+              required
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Slug</label
+            >
+            <input
+              type="text"
+              id="form-slug"
+              class="input w-full"
+              placeholder="contact-form"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Fields -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-slate-100">Form Fields</h2>
+          <button
+            type="button"
+            id="add-field-btn"
+            class="btn btn-primary text-sm"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add Field
+          </button>
+        </div>
+
+        <div id="fields-container" class="space-y-3">
+          <!-- Fields will be added here -->
+        </div>
+
+        <div id="empty-fields" class="text-center py-8 text-slate-500">
+          <p>No fields yet. Click "Add Field" to get started.</p>
+        </div>
+      </div>
+
+      <!-- Mail Settings -->
+      <div class="card">
+        <h2 class="text-lg font-semibold text-slate-100 mb-4">
+          Email Notification
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Send To (Email)</label
+            >
+            <input
+              type="email"
+              id="mail-to"
+              class="input w-full"
+              placeholder="admin@example.com"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Subject</label
+            >
+            <input
+              type="text"
+              id="mail-subject"
+              class="input w-full"
+              placeholder="New Contact Form Submission"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="card">
+        <h2 class="text-lg font-semibold text-slate-100 mb-4">Settings</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Submit Button Text</label
+            >
+            <input
+              type="text"
+              id="submit-btn-text"
+              class="input w-full"
+              value="Send Message"
+            />
+          </div>
+          <div class="flex items-center gap-3 pt-7">
+            <input type="checkbox" id="honeypot" class="w-4 h-4" checked />
+            <label for="honeypot" class="text-slate-300"
+              >Enable honeypot anti-spam</label
+            >
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-slate-300 mb-2"
+            >Success Message</label
+          >
+          <input
+            type="text"
+            id="success-msg"
+            class="input w-full"
+            value="Thank you for your message. We will get back to you soon!"
+          />
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 justify-end">
+        <a
+          href="/admin/forms"
+          class="btn bg-slate-800 text-slate-300 hover:bg-slate-700">Cancel</a
+        >
+        <button type="submit" class="btn btn-primary">Create Form</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Add Field Modal -->
+  <dialog
+    id="field-modal"
+    class="bg-slate-900 rounded-xl p-6 border border-slate-800 backdrop:bg-slate-950/80 w-full max-w-md"
+  >
+    <h3 class="text-lg font-semibold text-slate-100 mb-4">Add Field</h3>
+    <form id="field-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2"
+          >Field Type</label
+        >
+        <select id="field-type" class="input w-full">
+          <option value="text">Text</option>
+          <option value="email">Email</option>
+          <option value="tel">Phone</option>
+          <option value="number">Number</option>
+          <option value="textarea">Textarea</option>
+          <option value="select">Dropdown</option>
+          <option value="checkbox">Checkbox</option>
+          <option value="radio">Radio Buttons</option>
+          <option value="date">Date</option>
+          <option value="url">URL</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2"
+          >Label</label
+        >
+        <input type="text" id="field-label" class="input w-full" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2"
+          >Name (for form data)</label
+        >
+        <input type="text" id="field-name" class="input w-full" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2"
+          >Placeholder</label
+        >
+        <input type="text" id="field-placeholder" class="input w-full" />
+      </div>
+      <div id="options-container" class="hidden">
+        <label class="block text-sm font-medium text-slate-300 mb-2"
+          >Options (one per line)</label
+        >
+        <textarea
+          id="field-options"
+          class="input w-full"
+          rows="3"
+          placeholder="Option 1
+Option 2
+Option 3"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2"
+          >Width</label
+        >
+        <select id="field-width" class="input w-full">
+          <option value="full">Full Width</option>
+          <option value="half">Half Width</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-3">
+        <input type="checkbox" id="field-required" class="w-4 h-4" />
+        <label for="field-required" class="text-slate-300">Required field</label
+        >
+      </div>
+      <div class="flex gap-3 justify-end pt-4">
+        <button
+          type="button"
+          id="cancel-field"
+          class="btn bg-slate-800 text-slate-300 hover:bg-slate-700"
+          >Cancel</button
+        >
+        <button type="submit" class="btn btn-primary">Add Field</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div
+    id="toast"
+    class="fixed bottom-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300"
+  >
+  </div>
+</AdminLayout>
+
+<script>
+  interface FormField {
+    id: string;
+    type: string;
+    name: string;
+    label: string;
+    placeholder?: string;
+    required?: boolean;
+    width?: string;
+    options?: { label: string; value: string }[];
+  }
+
+  const fields: FormField[] = [];
+  const fieldModal = document.getElementById(
+    "field-modal",
+  ) as HTMLDialogElement;
+  const toast = document.getElementById("toast") as HTMLElement;
+  const fieldsContainer = document.getElementById(
+    "fields-container",
+  ) as HTMLElement;
+  const emptyFields = document.getElementById("empty-fields") as HTMLElement;
+
+  const titleInput = document.getElementById("form-title") as HTMLInputElement;
+  const slugInput = document.getElementById("form-slug") as HTMLInputElement;
+  const optionsContainer = document.getElementById(
+    "options-container",
+  ) as HTMLElement;
+  const fieldTypeSelect = document.getElementById(
+    "field-type",
+  ) as HTMLSelectElement;
+
+  function showToast(message: string, isError = false) {
+    toast.textContent = message;
+    toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300`;
+    setTimeout(() => {
+      toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300`;
+    }, 3000);
+  }
+
+  function generateId() {
+    return "field_" + Math.random().toString(36).substr(2, 9);
+  }
+
+  function slugify(text: string) {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  }
+
+  // Auto-generate slug from title
+  titleInput.addEventListener("input", () => {
+    if (!slugInput.dataset.manual) {
+      slugInput.value = slugify(titleInput.value);
+    }
+  });
+
+  slugInput.addEventListener("input", () => {
+    slugInput.dataset.manual = "true";
+  });
+
+  // Show/hide options based on field type
+  fieldTypeSelect.addEventListener("change", () => {
+    const needsOptions = ["select", "checkbox", "radio"].includes(
+      fieldTypeSelect.value,
+    );
+    optionsContainer.classList.toggle("hidden", !needsOptions);
+  });
+
+  function renderFields() {
+    if (fields.length === 0) {
+      fieldsContainer.innerHTML = "";
+      emptyFields.classList.remove("hidden");
+      return;
+    }
+
+    emptyFields.classList.add("hidden");
+    fieldsContainer.innerHTML = fields
+      .map(
+        (field, index) => `
+      <div class="bg-slate-800/50 rounded-lg p-4 flex items-center justify-between" data-index="${index}">
+        <div class="flex items-center gap-4">
+          <span class="text-slate-500 cursor-move">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+            </svg>
+          </span>
+          <div>
+            <p class="font-medium text-slate-100">${field.label} ${field.required ? '<span class="text-red-400">*</span>' : ""}</p>
+            <p class="text-sm text-slate-500">${field.type} • ${field.name} • ${field.width || "full"} width</p>
+          </div>
+        </div>
+        <button type="button" class="remove-field-btn text-slate-400 hover:text-red-400 p-1" data-index="${index}">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    `,
+      )
+      .join("");
+
+    // Add remove handlers
+    document.querySelectorAll(".remove-field-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = parseInt((btn as HTMLElement).dataset.index || "0");
+        fields.splice(index, 1);
+        renderFields();
+      });
+    });
+  }
+
+  document.getElementById("add-field-btn")?.addEventListener("click", () => {
+    // Reset form
+    (document.getElementById("field-form") as HTMLFormElement).reset();
+    optionsContainer.classList.add("hidden");
+    fieldModal.showModal();
+  });
+
+  document
+    .getElementById("cancel-field")
+    ?.addEventListener("click", () => fieldModal.close());
+
+  document.getElementById("field-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const type = (document.getElementById("field-type") as HTMLSelectElement)
+      .value;
+    const label = (document.getElementById("field-label") as HTMLInputElement)
+      .value;
+    const name = (document.getElementById("field-name") as HTMLInputElement)
+      .value;
+    const placeholder = (
+      document.getElementById("field-placeholder") as HTMLInputElement
+    ).value;
+    const width = (document.getElementById("field-width") as HTMLSelectElement)
+      .value;
+    const required = (
+      document.getElementById("field-required") as HTMLInputElement
+    ).checked;
+    const optionsText = (
+      document.getElementById("field-options") as HTMLTextAreaElement
+    ).value;
+
+    const field: FormField = {
+      id: generateId(),
+      type,
+      name,
+      label,
+      placeholder,
+      width,
+      required,
+    };
+
+    if (["select", "checkbox", "radio"].includes(type) && optionsText) {
+      field.options = optionsText
+        .split("\n")
+        .filter((o) => o.trim())
+        .map((o) => ({
+          label: o.trim(),
+          value: slugify(o.trim()),
+        }));
+    }
+
+    fields.push(field);
+    renderFields();
+    fieldModal.close();
+    showToast("Field added!");
+  });
+
+  // Auto-generate field name from label
+  document.getElementById("field-label")?.addEventListener("input", (e) => {
+    const nameInput = document.getElementById("field-name") as HTMLInputElement;
+    if (!nameInput.dataset.manual) {
+      nameInput.value = slugify((e.target as HTMLInputElement).value).replace(
+        /-/g,
+        "_",
+      );
+    }
+  });
+
+  document.getElementById("field-name")?.addEventListener("input", () => {
+    (document.getElementById("field-name") as HTMLInputElement).dataset.manual =
+      "true";
+  });
+
+  // Submit form
+  document
+    .getElementById("form-builder")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (fields.length === 0) {
+        showToast("Please add at least one field", true);
+        return;
+      }
+
+      const data = {
+        title: titleInput.value,
+        slug: slugInput.value,
+        fields: fields,
+        mailSettings: {
+          to: (document.getElementById("mail-to") as HTMLInputElement).value,
+          subject: (document.getElementById("mail-subject") as HTMLInputElement)
+            .value,
+        },
+        messages: {
+          success: (document.getElementById("success-msg") as HTMLInputElement)
+            .value,
+        },
+        submitButtonText: (
+          document.getElementById("submit-btn-text") as HTMLInputElement
+        ).value,
+        honeypot: (document.getElementById("honeypot") as HTMLInputElement)
+          .checked,
+      };
+
+      try {
+        const res = await fetch("/api/forms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          showToast("Form created!");
+          setTimeout(() => {
+            window.location.href = "/admin/forms";
+          }, 1000);
+        } else {
+          showToast(result.error || "Failed to create form", true);
+        }
+      } catch (err) {
+        showToast("An error occurred", true);
+      }
+    });
+
+  // Initialize with default fields
+  renderFields();
+</script>

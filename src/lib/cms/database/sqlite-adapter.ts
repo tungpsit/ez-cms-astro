@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import type { Author, Category, DatabaseAdapter, Media, Menu, Page, Post, User } from './types';
+import type { Author, Category, ContactForm, DatabaseAdapter, FormSubmission, Media, Menu, Page, Post, User } from './types';
 
 let Database: any;
 
@@ -18,17 +18,32 @@ export class SqliteAdapter implements DatabaseAdapter {
     
     const path = await import('node:path');
     const fs = await import('node:fs/promises');
-    const dir = path.dirname(this.filename);
+    
+    // Ensure filename is absolute if it starts with /tmp (for Vercel)
+    // or resolve it relative to process.cwd()
+    const absolutePath = path.isAbsolute(this.filename) 
+      ? this.filename 
+      : path.join(process.cwd(), this.filename);
+    
+    const dir = path.dirname(absolutePath);
     
     try {
-      await fs.access(dir);
-    } catch {
       await fs.mkdir(dir, { recursive: true });
+    } catch (error) {
+      // Ignore error if directory already exists, otherwise log it
+      if ((error as any).code !== 'EEXIST') {
+        console.warn(`[SqliteAdapter] Warning: Could not create directory ${dir}. This is expected on read-only filesystems like Vercel if not using /tmp.`, error);
+      }
     }
     
-    this.db = new Database(this.filename);
-    if (this.db) {
-      this.db.pragma('journal_mode = WAL');
+    try {
+      this.db = new Database(absolutePath);
+      if (this.db) {
+        this.db.pragma('journal_mode = WAL');
+      }
+    } catch (error) {
+      console.error(`[SqliteAdapter] Failed to initialize database at ${absolutePath}:`, error);
+      throw error;
     }
     
     this.createTables();
@@ -115,6 +130,32 @@ export class SqliteAdapter implements DatabaseAdapter {
         size INTEGER DEFAULT 0,
         mime_type TEXT DEFAULT '',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS contact_forms (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        fields TEXT DEFAULT '[]',
+        mail_settings TEXT DEFAULT '{}',
+        messages TEXT DEFAULT '{}',
+        submit_button_text TEXT DEFAULT 'Send Message',
+        css_class TEXT DEFAULT '',
+        honeypot INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS form_submissions (
+        id TEXT PRIMARY KEY,
+        form_id TEXT NOT NULL,
+        form_title TEXT NOT NULL,
+        data TEXT DEFAULT '{}',
+        status TEXT DEFAULT 'new',
+        ip_address TEXT DEFAULT '',
+        user_agent TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (form_id) REFERENCES contact_forms(id) ON DELETE CASCADE
       );
     `);
   }
@@ -530,6 +571,141 @@ export class SqliteAdapter implements DatabaseAdapter {
     try {
       const db = this.getDb();
       db.prepare('DELETE FROM media WHERE id = ?').run(id);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  // Contact Forms
+  async getContactForms(): Promise<ContactForm[]> {
+    const db = this.getDb();
+    const rows = db.prepare('SELECT * FROM contact_forms ORDER BY created_at DESC').all() as Array<Record<string, unknown>>;
+    return rows.map(row => ({
+      ...row,
+      honeypot: Boolean(row.honeypot),
+    })) as ContactForm[];
+  }
+
+  async getContactForm(id: string): Promise<ContactForm | null> {
+    const db = this.getDb();
+    const row = db.prepare('SELECT * FROM contact_forms WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      ...row,
+      honeypot: Boolean(row.honeypot),
+    } as ContactForm;
+  }
+
+  async getContactFormBySlug(slug: string): Promise<ContactForm | null> {
+    const db = this.getDb();
+    const row = db.prepare('SELECT * FROM contact_forms WHERE slug = ?').get(slug) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      ...row,
+      honeypot: Boolean(row.honeypot),
+    } as ContactForm;
+  }
+
+  async createContactForm(data: Omit<ContactForm, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      const db = this.getDb();
+      const id = data.slug || nanoid(10);
+      db.prepare(`
+        INSERT INTO contact_forms (id, title, slug, fields, mail_settings, messages, submit_button_text, css_class, honeypot)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id, data.title, data.slug, data.fields || '[]', data.mail_settings || '{}',
+        data.messages || '{}', data.submit_button_text || 'Send Message',
+        data.css_class || '', data.honeypot ? 1 : 0
+      );
+      return { success: true, id };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async updateContactForm(id: string, data: Partial<ContactForm>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const db = this.getDb();
+      const existing = await this.getContactForm(id);
+      if (!existing) return { success: false, error: 'Form not found' };
+
+      db.prepare(`
+        UPDATE contact_forms SET title = ?, slug = ?, fields = ?, mail_settings = ?, messages = ?,
+        submit_button_text = ?, css_class = ?, honeypot = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run(
+        data.title ?? existing.title, data.slug ?? existing.slug, data.fields ?? existing.fields,
+        data.mail_settings ?? existing.mail_settings, data.messages ?? existing.messages,
+        data.submit_button_text ?? existing.submit_button_text, data.css_class ?? existing.css_class,
+        (data.honeypot ?? existing.honeypot) ? 1 : 0, id
+      );
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async deleteContactForm(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const db = this.getDb();
+      db.prepare('DELETE FROM contact_forms WHERE id = ?').run(id);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  // Form Submissions
+  async getFormSubmissions(formId?: string): Promise<FormSubmission[]> {
+    const db = this.getDb();
+    if (formId) {
+      return db.prepare('SELECT * FROM form_submissions WHERE form_id = ? ORDER BY created_at DESC').all(formId) as FormSubmission[];
+    }
+    return db.prepare('SELECT * FROM form_submissions ORDER BY created_at DESC').all() as FormSubmission[];
+  }
+
+  async getFormSubmission(id: string): Promise<FormSubmission | null> {
+    const db = this.getDb();
+    return db.prepare('SELECT * FROM form_submissions WHERE id = ?').get(id) as FormSubmission | null;
+  }
+
+  async createFormSubmission(data: Omit<FormSubmission, 'id' | 'created_at'>): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      const db = this.getDb();
+      const id = nanoid(10);
+      db.prepare(`
+        INSERT INTO form_submissions (id, form_id, form_title, data, status, ip_address, user_agent)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id, data.form_id, data.form_title, data.data || '{}',
+        data.status || 'new', data.ip_address || '', data.user_agent || ''
+      );
+      return { success: true, id };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async updateFormSubmission(id: string, data: Partial<FormSubmission>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const db = this.getDb();
+      const existing = await this.getFormSubmission(id);
+      if (!existing) return { success: false, error: 'Submission not found' };
+
+      db.prepare(`
+        UPDATE form_submissions SET status = ? WHERE id = ?
+      `).run(data.status ?? existing.status, id);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async deleteFormSubmission(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const db = this.getDb();
+      db.prepare('DELETE FROM form_submissions WHERE id = ?').run(id);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };

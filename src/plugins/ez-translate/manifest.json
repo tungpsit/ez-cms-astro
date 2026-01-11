@@ -1,0 +1,13 @@
+{
+  "id": "ez-translate",
+  "name": "EZ Translate",
+  "version": "1.0.0",
+  "author": "EZ CMS",
+  "description": "A copy of Loco Translate for Astro. Manage and edit translations for your themes and plugins directly in the browser.",
+  "hooks": ["onAdminMenu", "onInit"],
+  "defaultSettings": {
+    "defaultLocale": "en",
+    "locales": ["en", "vi"],
+    "scanDirectories": ["src/pages", "src/components", "src/layouts", "src/plugins"]
+  }
+}

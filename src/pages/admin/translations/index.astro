@@ -1,0 +1,324 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { i18n } from "../../../lib/i18n";
+
+const locales = await i18n.getLocales();
+---
+
+<AdminLayout title="Translations">
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-100">Locales</h2>
+        <p class="text-slate-400">Manage your site translations</p>
+      </div>
+      <div class="flex gap-3">
+        <button
+          id="scan-btn"
+          class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            ></path>
+          </svg>
+          Scan for Strings
+        </button>
+        <button
+          id="add-locale-btn"
+          class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Locale
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden"
+    >
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-800/50 border-b border-slate-800">
+            <th class="px-6 py-4 text-sm font-semibold text-slate-300"
+              >Language</th
+            >
+            <th class="px-6 py-4 text-sm font-semibold text-slate-300">Code</th>
+            <th class="px-6 py-4 text-sm font-semibold text-slate-300"
+              >Progress</th
+            >
+            <th class="px-6 py-4 text-sm font-semibold text-slate-300"
+              >Strings</th
+            >
+            <th
+              class="px-6 py-4 text-sm font-semibold text-slate-300 text-right"
+              >Actions</th
+            >
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+          {
+            locales.length === 0 ? (
+              <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                  No locales found. Click "Add Locale" to get started.
+                </td>
+              </tr>
+            ) : (
+              locales.map((locale) => (
+                <tr class="hover:bg-slate-800/30 transition-colors group">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
+                        {locale.code.toUpperCase()}
+                      </div>
+                      <span class="font-medium text-slate-200">
+                        {locale.name}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-slate-400">
+                    {locale.code}
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="w-full max-w-[120px]">
+                      <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-slate-400">{locale.progress}%</span>
+                        <span class="text-slate-500">
+                          {locale.translated}/{locale.count}
+                        </span>
+                      </div>
+                      <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          class="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                          style={`width: ${locale.progress}%`}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-slate-400">
+                    {locale.translated} translated
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a
+                        href={`/admin/translations/${locale.code}`}
+                        class="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                        title="Edit Translations"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </a>
+                      <button
+                        class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors delete-locale-btn"
+                        data-code={locale.code}
+                        title="Delete Locale"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Locale Modal -->
+  <div id="add-locale-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div
+        class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl"
+      >
+        <div
+          class="p-6 border-b border-slate-800 flex justify-between items-center"
+        >
+          <h3 class="text-xl font-bold text-slate-100">Add New Locale</h3>
+          <button id="close-modal" class="text-slate-400 hover:text-slate-100">
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <form id="add-locale-form" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1"
+              >Language Code (e.g. en, vi, fr)</label
+            >
+            <input
+              type="text"
+              name="code"
+              required
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              placeholder="en"
+            />
+          </div>
+          <div class="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              id="cancel-modal"
+              class="px-4 py-2 text-slate-400 hover:text-slate-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              Create Locale
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const addLocaleBtn = document.getElementById("add-locale-btn");
+  const addLocaleModal = document.getElementById("add-locale-modal");
+  const closeModal = document.getElementById("close-modal");
+  const cancelModal = document.getElementById("cancel-modal");
+  const addLocaleForm = document.getElementById(
+    "add-locale-form",
+  ) as HTMLFormElement;
+  const scanBtn = document.getElementById("scan-btn");
+
+  addLocaleBtn?.addEventListener("click", () => {
+    addLocaleModal?.classList.remove("hidden");
+  });
+
+  [closeModal, cancelModal].forEach((btn) => {
+    btn?.addEventListener("click", () => {
+      addLocaleModal?.classList.add("hidden");
+    });
+  });
+
+  addLocaleForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addLocaleForm);
+    const code = formData.get("code");
+
+    try {
+      const response = await fetch("/api/translations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "addLocale", code }),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert("Failed to add locale");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error adding locale");
+    }
+  });
+
+  scanBtn?.addEventListener("click", async () => {
+    scanBtn.classList.add("animate-pulse");
+    scanBtn.setAttribute("disabled", "true");
+
+    try {
+      const response = await fetch("/api/translations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "scan" }),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert("Failed to scan for strings");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error scanning for strings");
+    } finally {
+      scanBtn.classList.remove("animate-pulse");
+      scanBtn.removeAttribute("disabled");
+    }
+  });
+
+  document.querySelectorAll(".delete-locale-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const code = (btn as HTMLElement).dataset.code;
+      if (!confirm(`Are you sure you want to delete the ${code} locale?`))
+        return;
+
+      try {
+        const response = await fetch("/api/translations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deleteLocale", code }),
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert("Failed to delete locale");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Error deleting locale");
+      }
+    });
+  });
+</script>

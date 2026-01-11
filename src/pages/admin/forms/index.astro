@@ -1,0 +1,400 @@
+---
+import AdminLayout from "@layouts/AdminLayout.astro";
+import { getDatabase } from "@lib/cms/database";
+
+const db = await getDatabase();
+const forms = await db.getContactForms();
+const submissions = await db.getFormSubmissions();
+
+// Count submissions per form
+const submissionCounts: Record<string, number> = {};
+submissions.forEach((sub) => {
+  submissionCounts[sub.form_id] = (submissionCounts[sub.form_id] || 0) + 1;
+});
+---
+
+<AdminLayout title="Contact Forms">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400">{forms.length} forms</p>
+      </div>
+      <a href="/admin/forms/new" class="btn btn-primary">
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        New Form
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {
+        forms.map((form) => {
+          const count = submissionCounts[form.id] || 0;
+          const newCount = submissions.filter(
+            (s) => s.form_id === form.id && s.status === "new",
+          ).length;
+          return (
+            <div
+              class="card group hover:border-emerald-500/30 transition-all"
+              data-id={form.id}
+            >
+              <div class="flex items-start justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-cyan-500/20">
+                  <svg
+                    class="w-5 h-5 text-cyan-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    class="copy-btn p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+                    data-shortcode={`[contact-form id="${form.slug}"]`}
+                    title="Copy shortcode"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
+                  <a
+                    href={`/admin/forms/${form.id}`}
+                    class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </a>
+                  <button
+                    class="delete-btn p-1.5 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
+                    data-id={form.id}
+                    data-name={form.title}
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <h3 class="font-semibold text-slate-100 mb-1">{form.title}</h3>
+
+              <div class="flex items-center gap-2 mb-3">
+                <code class="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400">
+                  [contact-form id="{form.slug}"]
+                </code>
+              </div>
+
+              <div class="flex items-center gap-3 text-xs text-slate-500">
+                <span class="flex items-center gap-1">
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  {count} submissions
+                </span>
+                {newCount > 0 && (
+                  <span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                    {newCount} new
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })
+      }
+    </div>
+
+    {
+      forms.length === 0 && (
+        <div class="card text-center py-16">
+          <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+            <svg
+              class="w-8 h-8 text-slate-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-100 mb-2">
+            No forms yet
+          </h3>
+          <p class="text-slate-400 mb-4">
+            Create your first contact form to start collecting submissions
+          </p>
+          <a href="/admin/forms/new" class="btn btn-primary">
+            Create Form
+          </a>
+        </div>
+      )
+    }
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card">
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center"
+          >
+            <svg
+              class="w-6 h-6 text-cyan-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-slate-100">{forms.length}</p>
+            <p class="text-sm text-slate-400">Total Forms</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center"
+          >
+            <svg
+              class="w-6 h-6 text-emerald-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              ></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-slate-100">
+              {submissions.length}
+            </p>
+            <p class="text-sm text-slate-400">Total Submissions</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center"
+          >
+            <svg
+              class="w-6 h-6 text-amber-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              ></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-slate-100">
+              {submissions.filter((s) => s.status === "new").length}
+            </p>
+            <p class="text-sm text-slate-400">New Submissions</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Submissions Link -->
+    {
+      submissions.length > 0 && (
+        <div class="flex justify-center">
+          <a
+            href="/admin/forms/submissions"
+            class="btn bg-slate-800 text-slate-300 hover:bg-slate-700"
+          >
+            View All Submissions
+            <svg
+              class="w-4 h-4 ml-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </a>
+        </div>
+      )
+    }
+  </div>
+
+  <dialog
+    id="delete-modal"
+    class="bg-slate-900 rounded-xl p-6 border border-slate-800 backdrop:bg-slate-950/80"
+  >
+    <h3 class="text-lg font-semibold text-slate-100 mb-2">Delete Form</h3>
+    <p class="text-slate-400 mb-6">
+      Are you sure you want to delete "<span id="delete-name"></span>"? This
+      will also delete all submissions.
+    </p>
+    <div class="flex gap-3 justify-end">
+      <button
+        id="cancel-delete"
+        class="btn bg-slate-800 text-slate-300 hover:bg-slate-700"
+        >Cancel</button
+      >
+      <button
+        id="confirm-delete"
+        class="btn bg-red-500 text-white hover:bg-red-600">Delete</button
+      >
+    </div>
+  </dialog>
+
+  <div
+    id="toast"
+    class="fixed bottom-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300"
+  >
+  </div>
+</AdminLayout>
+
+<script>
+  const deleteModal = document.getElementById(
+    "delete-modal",
+  ) as HTMLDialogElement;
+  const toast = document.getElementById("toast") as HTMLElement;
+  const deleteName = document.getElementById("delete-name") as HTMLElement;
+
+  let currentDeleteId = "";
+
+  function showToast(message: string, isError = false) {
+    toast.textContent = message;
+    toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300`;
+    setTimeout(() => {
+      toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300`;
+    }, 3000);
+  }
+
+  // Copy shortcode
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const el = btn as HTMLElement;
+      const shortcode = el.dataset.shortcode || "";
+      navigator.clipboard.writeText(shortcode);
+      showToast("Shortcode copied!");
+    });
+  });
+
+  // Delete form
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const el = btn as HTMLElement;
+      currentDeleteId = el.dataset.id || "";
+      deleteName.textContent = el.dataset.name || "";
+      deleteModal.showModal();
+    });
+  });
+
+  document
+    .getElementById("cancel-delete")
+    ?.addEventListener("click", () => deleteModal.close());
+
+  document
+    .getElementById("confirm-delete")
+    ?.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/forms", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: currentDeleteId }),
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          showToast("Form deleted!");
+          deleteModal.close();
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } else {
+          showToast(result.error || "Failed to delete", true);
+        }
+      } catch (err) {
+        showToast("An error occurred", true);
+      }
+    });
+</script>

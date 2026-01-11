@@ -1,6 +1,12 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import { loadConfig } from "../../lib/cms/config";
 import { getDatabase } from "../../lib/cms/database";
+import { i18n } from "../../lib/i18n";
+
+const config = await loadConfig();
+const currentLocale = config.language || "en";
+const t = await i18n.getT(currentLocale);
 
 const db = await getDatabase();
 const posts = await db.getPosts();
@@ -12,20 +18,25 @@ const draftPosts = posts.filter((p) => p.draft);
 
 const stats = [
   {
-    label: "Total Posts",
+    label: t("Total Posts"),
     value: posts.length,
     icon: "posts",
     color: "emerald",
   },
   {
-    label: "Published",
+    label: t("Published"),
     value: publishedPosts.length,
     icon: "check",
     color: "cyan",
   },
-  { label: "Drafts", value: draftPosts.length, icon: "draft", color: "amber" },
   {
-    label: "Categories",
+    label: t("Drafts"),
+    value: draftPosts.length,
+    icon: "draft",
+    color: "amber",
+  },
+  {
+    label: t("Categories"),
     value: categories.length,
     icon: "categories",
     color: "violet",
@@ -51,8 +62,10 @@ const icons: Record<string, string> = {
   <div class="space-y-8">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-2xl font-bold text-slate-100">Welcome back!</h2>
-        <p class="text-slate-400">Here's what's happening with your site</p>
+        <h2 class="text-2xl font-bold text-slate-100">{t("Welcome back!")}</h2>
+        <p class="text-slate-400">
+          {t("Here's what's happening with your site")}
+        </p>
       </div>
       <a href="/admin/posts/new" class="btn btn-primary">
         <svg

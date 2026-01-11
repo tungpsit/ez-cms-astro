@@ -1,0 +1,120 @@
+---
+import { i18n } from "@lib/i18n";
+
+const currentLocale = await i18n.getLocale(Astro.request);
+const locales = await i18n.getLocales();
+---
+
+<div class="relative inline-block text-left" id="language-switcher">
+  <div>
+    <button
+      type="button"
+      class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all border border-slate-700/50"
+      id="lang-menu-button"
+      aria-expanded="false"
+      aria-haspopup="true"
+    >
+      <svg
+        class="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 11.37 9.188 15.287 5.75 18.067"
+        ></path>
+      </svg>
+      <span class="text-sm font-medium uppercase">{currentLocale}</span>
+      <svg
+        class="w-4 h-4 opacity-50"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 9l-7 7-7-7"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div
+    class="absolute right-0 mt-2 w-40 origin-top-right rounded-xl bg-slate-900 border border-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-50 overflow-hidden"
+    id="lang-menu-items"
+    role="menu"
+    aria-orientation="vertical"
+    aria-labelledby="lang-menu-button"
+    tabindex="-1"
+  >
+    <div class="py-1" role="none">
+      {
+        locales.map((locale) => (
+          <button
+            class:list={[
+              "w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between",
+              currentLocale === locale.code
+                ? "bg-emerald-500/10 text-emerald-400 font-semibold"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-100",
+            ]}
+            role="menuitem"
+            tabindex="-1"
+            data-locale={locale.code}
+          >
+            <span>{locale.name}</span>
+            {currentLocale === locale.code && (
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            )}
+          </button>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<script>
+  const button = document.getElementById("lang-menu-button");
+  const menu = document.getElementById("lang-menu-items");
+  const switcher = document.getElementById("language-switcher");
+
+  button?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menu?.classList.toggle("hidden");
+    const expanded = button.getAttribute("aria-expanded") === "true";
+    button.setAttribute("aria-expanded", (!expanded).toString());
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!switcher?.contains(e.target as Node)) {
+      menu?.classList.add("hidden");
+      button?.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  menu?.querySelectorAll('button[role="menuitem"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const locale = (btn as HTMLElement).dataset.locale;
+      if (locale) {
+        // Set cookie and reload
+        document.cookie = `ez_locale=${locale}; path=/; max-age=31536000`;
+        window.location.reload();
+      }
+    });
+  });
+</script>

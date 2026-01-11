@@ -1,0 +1,60 @@
+---
+import SiteLayout from "@layouts/SiteLayout.astro";
+import { initPlugins, processContent } from "@lib/cms/plugins";
+import { i18n } from "@lib/i18n";
+
+const currentLocale = await i18n.getLocale(Astro.request);
+const t = await i18n.getT(currentLocale);
+
+await initPlugins();
+
+// Test the contact form shortcode
+const testContent = `
+<h2>${t("Contact Us")}</h2>
+<p>${t("Fill out the form below to get in touch with us.")}</p>
+
+[contact-form id="contact-us"]
+
+<p class="mt-8 text-slate-500 text-sm">${t("This form was embedded using a shortcode.")}</p>
+`;
+
+const processedContent = processContent(testContent);
+---
+
+<SiteLayout
+  title={t("Test Contact Form")}
+  description={t("Test page for contact form shortcode")}
+>
+  <main class="py-24">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6">
+      <div class="mb-12 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-100 mb-4">
+          {t("Contact Form Test")}
+        </h1>
+        <p class="text-xl text-slate-400">
+          {t("Testing the [contact-form] shortcode functionality")}
+        </p>
+        <div class="h-1 w-20 bg-emerald-500 mx-auto mt-8"></div>
+      </div>
+
+      <div
+        class="prose prose-invert prose-emerald max-w-none"
+        set:html={processedContent}
+      />
+
+      <div class="mt-12 p-4 bg-slate-800/50 rounded-lg">
+        <h3 class="text-lg font-semibold text-slate-100 mb-2">Debug Info</h3>
+        <p class="text-sm text-slate-400 mb-2">
+          <strong>Original shortcode:</strong>
+          <code class="text-cyan-400">[contact-form id="contact-us"]</code>
+        </p>
+        <p class="text-sm text-slate-400">
+          <strong>Note:</strong> Create a form with slug "contact-us" at <a
+            href="/admin/forms/new"
+            class="text-emerald-400 hover:underline">/admin/forms/new</a
+          > to see the form render.
+        </p>
+      </div>
+    </div>
+  </main>
+</SiteLayout>

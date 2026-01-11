@@ -1,14 +1,50 @@
 ---
 import { getConfig } from "../../lib/cms/config";
+import { getDatabase } from "../../lib/cms/database";
+import { i18n } from "../../lib/i18n";
+import LanguageSwitcher from "../LanguageSwitcher.astro";
 
 const config = getConfig();
+const db = await getDatabase();
+const menus = await db.getMenus();
 
-const navItems = [
-  { label: "Home", href: "/" },
-  { label: "Blog", href: "/blog" },
-  { label: "About", href: "/about" },
-  { label: "Admin", href: "/admin" },
+const currentLocale = await i18n.getLocale(Astro.request);
+const t = await i18n.getT(currentLocale);
+
+// Try to find a menu named "Main Menu" or "Header Menu"
+const headerMenu =
+  menus.find(
+    (m) =>
+      m.name.toLowerCase() === "main menu" ||
+      m.name.toLowerCase() === "header menu" ||
+      m.name.toLowerCase() === "navigation",
+  ) || menus[0];
+
+let navItems = [
+  { label: t("Home"), href: "/", target: "_self" },
+  { label: t("Blog"), href: "/blog", target: "_self" },
+  { label: t("About"), href: "/about", target: "_self" },
+  { label: t("Admin"), href: "/admin", target: "_self" },
 ];
+
+if (headerMenu) {
+  try {
+    const items =
+      typeof headerMenu.items === "string"
+        ? JSON.parse(headerMenu.items)
+        : headerMenu.items;
+
+    if (Array.isArray(items) && items.length > 0) {
+      navItems = items.map((item: any) => ({
+        label: item.label,
+        href: item.url,
+        target: item.target,
+      }));
+    }
+  } catch (e) {
+    console.error("Failed to parse menu items:", e);
+  }
+}
 ---
 
 <header
@@ -46,6 +82,7 @@ const navItems = [
             <li>
               <a
                 href={item.href}
+                target={item.target || "_self"}
                 class="px-4 py-2 rounded-lg text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:bg-[rgba(var(--theme-text-rgb),0.05)] transition-all duration-200"
               >
                 {item.label}
@@ -56,6 +93,7 @@ const navItems = [
       </ul>
 
       <div class="flex items-center gap-3">
+        <LanguageSwitcher />
         <a href="/admin" class="btn btn-primary text-sm">
           <svg
             class="w-4 h-4"
@@ -69,7 +107,7 @@ const navItems = [
               stroke-width="2"
               d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
-          New Post
+          {t("New Post")}
         </a>
       </div>
     </nav>

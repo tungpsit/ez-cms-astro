@@ -4,6 +4,23 @@ import path from 'node:path';
 const CONTENT_DIR = path.join(process.cwd(), 'src/content');
 const UPLOADS_DIR = path.join(process.cwd(), 'public/uploads');
 
+// Supabase Storage Configuration
+const SUPABASE_URL = import.meta.env.SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_BUCKET = import.meta.env.SUPABASE_BUCKET || process.env.SUPABASE_BUCKET || 'media';
+
+let supabaseClient: any = null;
+
+async function getSupabase() {
+  if (supabaseClient) return supabaseClient;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  
+  const { createClient } = await import('@supabase/supabase-js');
+  supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return supabaseClient;
+}
+
+
 export interface ContentFile {
   id: string;
   type: 'post' | 'page' | 'category' | 'author' | 'menu';
@@ -303,55 +320,122 @@ export async function deleteCategory(id: string): Promise<{ success: boolean; er
 
 export async function uploadMedia(file: File): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    await ensureDir(UPLOADS_DIR);
-    
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `${timestamp}-${safeName}`;
-    const filePath = path.join(UPLOADS_DIR, fileName);
     
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filePath, buffer);
+    const supabase = await getSupabase();
     
-    return { success: true, url: `/uploads/${fileName}` };
+    if (supabase) {
+      // Upload to Supabase Storage
+      const buffer = await file.arrayBuffer();
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .upload(fileName, buffer, {
+          contentType: file.type,
+          upsert: false
+        });
+        
+      if (error) throw error;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from(SUPABASE_BUCKET)
+        .getPublicUrl(fileName);
+        
+      return { success: true, url: publicUrl };
+    } else {
+      // Fallback to local storage (only works if not on Vercel or in /tmp)
+      const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+      if (isVercel) {
+        return { success: false, error: 'Local uploads are not supported on Vercel. Please configure Supabase Storage.' };
+      }
+
+      await ensureDir(UPLOADS_DIR);
+      const filePath = path.join(UPLOADS_DIR, fileName);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await fs.writeFile(filePath, buffer);
+      
+      return { success: true, url: `/uploads/${fileName}` };
+    }
   } catch (error) {
     return { success: false, error: String(error) };
   }
 }
 
+
 export async function listMedia(): Promise<{ files: Array<{ name: string; url: string; size: number; modified: Date }> }> {
   try {
-    await ensureDir(UPLOADS_DIR);
-    const files = await fs.readdir(UPLOADS_DIR);
+    const supabase = await getSupabase();
     
-    const mediaFiles = await Promise.all(
-      files.map(async (name) => {
-        const filePath = path.join(UPLOADS_DIR, name);
-        const stats = await fs.stat(filePath);
-        return {
-          name,
-          url: `/uploads/${name}`,
-          size: stats.size,
-          modified: stats.mtime,
-        };
-      })
-    );
-    
-    return { files: mediaFiles.sort((a, b) => b.modified.getTime() - a.modified.getTime()) };
+    if (supabase) {
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .list('', {
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+        
+      if (error) throw error;
+      
+      return {
+        files: (data || []).map((file: any) => {
+          const { data: { publicUrl } } = supabase.storage
+            .from(SUPABASE_BUCKET)
+            .getPublicUrl(file.name);
+            
+          return {
+            name: file.name,
+            url: publicUrl,
+            size: file.metadata?.size || 0,
+            modified: new Date(file.created_at)
+          };
+        })
+      };
+    } else {
+      await ensureDir(UPLOADS_DIR);
+      const files = await fs.readdir(UPLOADS_DIR);
+      
+      const mediaFiles = await Promise.all(
+        files.map(async (name) => {
+          const filePath = path.join(UPLOADS_DIR, name);
+          const stats = await fs.stat(filePath);
+          return {
+            name,
+            url: `/uploads/${name}`,
+            size: stats.size,
+            modified: stats.mtime,
+          };
+        })
+      );
+      
+      return { files: mediaFiles.sort((a, b) => b.modified.getTime() - a.modified.getTime()) };
+    }
   } catch (error) {
     return { files: [] };
   }
 }
 
+
 export async function deleteMedia(fileName: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const filePath = path.join(UPLOADS_DIR, fileName);
-    await fs.unlink(filePath);
-    return { success: true };
+    const supabase = await getSupabase();
+    
+    if (supabase) {
+      const { error } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .remove([fileName]);
+        
+      if (error) throw error;
+      return { success: true };
+    } else {
+      const filePath = path.join(UPLOADS_DIR, fileName);
+      await fs.unlink(filePath);
+      return { success: true };
+    }
   } catch (error) {
     return { success: false, error: String(error) };
   }
 }
+
 
 export async function readPostContent(id: string): Promise<{ frontmatter: Record<string, unknown>; content: string } | null> {
   try {

@@ -3,6 +3,7 @@ import { getConfig } from "../lib/cms/config";
 import { initPlugins, injectBodyEnd, injectHead } from "../lib/cms/plugins";
 import { getThemeById, loadActiveTheme } from "../lib/cms/themes";
 import { hexToRgb } from "../lib/cms/utils";
+import { i18n } from "../lib/i18n";
 import "../styles/global.css";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const config = getConfig();
+const currentLocale = await i18n.getLocale(Astro.request);
 const activeThemeId = await loadActiveTheme();
 const activeTheme = getThemeById(activeThemeId);
 const themeSettings = activeTheme?.settings || {
@@ -33,7 +35,7 @@ const bodyEndInjections = injectBodyEnd();
 ---
 
 <!doctype html>
-<html lang={config.language}>
+<html lang={currentLocale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -4,7 +4,7 @@
   "siteDescription": "A powerful and flexible CMS built with Astro",
   "logo": "",
   "favicon": "/favicon.svg",
-  "language": "en",
+  "language": "vi",
   "timezone": "UTC",
   "postsPerPage": 10,
   "dateFormat": "MMMM dd, yyyy",

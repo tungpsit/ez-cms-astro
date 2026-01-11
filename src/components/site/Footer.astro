@@ -1,8 +1,47 @@
 ---
 import { getConfig } from "../../lib/cms/config";
+import { getDatabase } from "../../lib/cms/database";
+import { i18n } from "../../lib/i18n";
 
 const config = getConfig();
 const currentYear = new Date().getFullYear();
+
+const db = await getDatabase();
+const menus = await db.getMenus();
+
+const currentLocale = await i18n.getLocale(Astro.request);
+const t = await i18n.getT(currentLocale);
+
+// Try to find a menu named "Footer Menu" or "Quick Links"
+const footerMenu = menus.find(
+  (m) =>
+    m.name.toLowerCase() === "footer menu" ||
+    m.name.toLowerCase() === "quick links",
+);
+
+let quickLinks = [
+  { label: t("Blog"), href: "/blog" },
+  { label: t("About"), href: "/about" },
+  { label: t("Admin Panel"), href: "/admin" },
+];
+
+if (footerMenu) {
+  try {
+    const items =
+      typeof footerMenu.items === "string"
+        ? JSON.parse(footerMenu.items)
+        : footerMenu.items;
+
+    if (Array.isArray(items) && items.length > 0) {
+      quickLinks = items.map((item: any) => ({
+        label: item.label,
+        href: item.url,
+      }));
+    }
+  } catch (e) {
+    console.error("Failed to parse footer menu items:", e);
+  }
+}
 ---
 
 <footer
@@ -38,31 +77,29 @@ const currentYear = new Date().getFullYear();
       </div>
 
       <div>
-        <h3 class="font-semibold text-[var(--theme-text)] mb-4">Quick Links</h3>
+        <h3 class="font-semibold text-[var(--theme-text)] mb-4">
+          {t("Quick Links")}
+        </h3>
         <ul class="space-y-2">
-          <li>
-            <a
-              href="/blog"
-              class="text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:text-[var(--theme-primary)] transition-colors"
-              >Blog</a>
-          </li>
-          <li>
-            <a
-              href="/about"
-              class="text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:text-[var(--theme-primary)] transition-colors"
-              >About</a>
-          </li>
-          <li>
-            <a
-              href="/admin"
-              class="text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:text-[var(--theme-primary)] transition-colors"
-              >Admin Panel</a>
-          </li>
+          {
+            quickLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:text-[var(--theme-primary)] transition-colors"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
         </ul>
       </div>
 
       <div>
-        <h3 class="font-semibold text-[var(--theme-text)] mb-4">Resources</h3>
+        <h3 class="font-semibold text-[var(--theme-text)] mb-4">
+          {t("Resources")}
+        </h3>
         <ul class="space-y-2">
           <li>
             <a
@@ -70,7 +107,8 @@ const currentYear = new Date().getFullYear();
               target="_blank"
               rel="noopener"
               class="text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:text-[var(--theme-primary)] transition-colors"
-              >Astro Docs</a>
+              >Astro Docs</a
+            >
           </li>
           <li>
             <a
@@ -78,7 +116,8 @@ const currentYear = new Date().getFullYear();
               target="_blank"
               rel="noopener"
               class="text-[var(--theme-text)] opacity-60 hover:opacity-100 hover:text-[var(--theme-primary)] transition-colors"
-              >GitHub</a>
+              >GitHub</a
+            >
           </li>
         </ul>
       </div>

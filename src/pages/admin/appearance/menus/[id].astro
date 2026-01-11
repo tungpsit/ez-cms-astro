@@ -1,0 +1,539 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import { getDatabase } from "../../../../lib/cms/database";
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect("/admin/appearance/menus");
+}
+
+const db = await getDatabase();
+const menu = await db.getMenu(id);
+
+if (!menu) {
+  return Astro.redirect("/admin/appearance/menus");
+}
+
+const items =
+  typeof menu.items === "string" ? JSON.parse(menu.items || "[]") : menu.items;
+
+// Get pages and categories for adding menu items
+const pages = await db.getPages();
+const categories = await db.getCategories();
+---
+
+<AdminLayout title={`Edit Menu: ${menu.name}`}>
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center gap-4 mb-6">
+      <a
+        href="/admin/appearance/menus"
+        class="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold text-slate-100">{menu.name}</h1>
+        <p class="text-slate-400 text-sm">Edit menu structure and items</p>
+      </div>
+      <button id="save-btn" class="btn btn-primary">
+        <svg
+          class="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"></path>
+        </svg>
+        Save Changes
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Add Items Panel -->
+      <div class="card lg:col-span-1">
+        <h3 class="text-lg font-semibold text-slate-100 mb-4">
+          Add Menu Items
+        </h3>
+
+        <!-- Custom Link -->
+        <div class="border-b border-slate-800 pb-4 mb-4">
+          <button
+            id="toggle-custom-link"
+            class="flex items-center justify-between w-full text-left text-slate-300 hover:text-slate-100"
+          >
+            <span class="font-medium">Custom Link</span>
+            <svg
+              class="w-4 h-4 transform transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <div id="custom-link-form" class="hidden mt-3 space-y-3">
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">Label</label>
+              <input
+                type="text"
+                id="custom-label"
+                class="input w-full text-sm"
+                placeholder="Link text"
+              />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">URL</label>
+              <input
+                type="text"
+                id="custom-url"
+                class="input w-full text-sm"
+                placeholder="https://"
+              />
+            </div>
+            <div>
+              <label class="flex items-center gap-2 text-sm text-slate-400">
+                <input
+                  type="checkbox"
+                  id="custom-newtab"
+                  class="rounded bg-slate-800 border-slate-700"
+                />
+                Open in new tab
+              </label>
+            </div>
+            <button
+              id="add-custom-link"
+              class="btn btn-secondary text-sm w-full">Add to Menu</button
+            >
+          </div>
+        </div>
+
+        <!-- Pages -->
+        <div class="border-b border-slate-800 pb-4 mb-4">
+          <button
+            id="toggle-pages"
+            class="flex items-center justify-between w-full text-left text-slate-300 hover:text-slate-100"
+          >
+            <span class="font-medium">Pages</span>
+            <svg
+              class="w-4 h-4 transform transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <div
+            id="pages-list"
+            class="hidden mt-3 space-y-2 max-h-48 overflow-y-auto"
+          >
+            {
+              pages.length === 0 ? (
+                <p class="text-sm text-slate-500">No pages available</p>
+              ) : (
+                pages.map((page) => (
+                  <label class="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      class="page-checkbox rounded bg-slate-800 border-slate-700"
+                      data-label={page.title}
+                      data-url={`/${page.slug}`}
+                    />
+                    {page.title}
+                  </label>
+                ))
+              )
+            }
+            {
+              pages.length > 0 && (
+                <button
+                  id="add-pages"
+                  class="btn btn-secondary text-sm w-full mt-2"
+                >
+                  Add Selected
+                </button>
+              )
+            }
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div>
+          <button
+            id="toggle-categories"
+            class="flex items-center justify-between w-full text-left text-slate-300 hover:text-slate-100"
+          >
+            <span class="font-medium">Categories</span>
+            <svg
+              class="w-4 h-4 transform transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <div
+            id="categories-list"
+            class="hidden mt-3 space-y-2 max-h-48 overflow-y-auto"
+          >
+            {
+              categories.length === 0 ? (
+                <p class="text-sm text-slate-500">No categories available</p>
+              ) : (
+                categories.map((cat) => (
+                  <label class="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      class="category-checkbox rounded bg-slate-800 border-slate-700"
+                      data-label={cat.name}
+                      data-url={`/blog/category/${cat.slug}`}
+                    />
+                    {cat.name}
+                  </label>
+                ))
+              )
+            }
+            {
+              categories.length > 0 && (
+                <button
+                  id="add-categories"
+                  class="btn btn-secondary text-sm w-full mt-2"
+                >
+                  Add Selected
+                </button>
+              )
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu Structure -->
+      <div class="card lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-slate-100">Menu Structure</h3>
+          <span class="text-sm text-slate-500">Drag items to reorder</span>
+        </div>
+
+        <div id="menu-items" class="space-y-2 min-h-32">
+          {
+            items.length === 0 ? (
+              <div id="empty-message" class="text-center py-8 text-slate-500">
+                <svg
+                  class="w-12 h-12 mx-auto mb-3 opacity-50"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+                <p>No menu items yet</p>
+                <p class="text-sm">Add items from the panel on the left</p>
+              </div>
+            ) : null
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu Settings -->
+    <div class="card">
+      <h3 class="text-lg font-semibold text-slate-100 mb-4">Menu Settings</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2"
+            >Menu Name</label
+          >
+          <input
+            type="text"
+            id="menu-name"
+            class="input w-full"
+            value={menu.name}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    id="toast"
+    class="fixed bottom-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300"
+  >
+  </div>
+</AdminLayout>
+
+<script define:vars={{ items, menuId: id }}>
+  let menuItems = items || [];
+  const menuItemsContainer = document.getElementById("menu-items");
+  const toast = document.getElementById("toast");
+
+  function showToast(message, isError = false) {
+    toast.textContent = message;
+    toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300`;
+    setTimeout(() => {
+      toast.className = `fixed bottom-4 right-4 ${isError ? "bg-red-500" : "bg-emerald-500"} text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300`;
+    }, 3000);
+  }
+
+  function renderMenuItems() {
+    const emptyMessage = document.getElementById("empty-message");
+
+    if (menuItems.length === 0) {
+      menuItemsContainer.innerHTML = `
+        <div id="empty-message" class="text-center py-8 text-slate-500">
+          <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <p>No menu items yet</p>
+          <p class="text-sm">Add items from the panel on the left</p>
+        </div>
+      `;
+      return;
+    }
+
+    menuItemsContainer.innerHTML = menuItems
+      .map(
+        (item, index) => `
+      <div class="menu-item flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-lg p-3 cursor-move" draggable="true" data-index="${index}">
+        <div class="drag-handle text-slate-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium text-slate-200">${escapeHtml(item.label)}</div>
+          <div class="text-sm text-slate-500 truncate">${escapeHtml(item.url)}</div>
+        </div>
+        <div class="flex items-center gap-1">
+          ${
+            item.target === "_blank"
+              ? `
+            <span class="text-xs text-slate-500 px-2 py-1 bg-slate-900 rounded">New tab</span>
+          `
+              : ""
+          }
+          <button class="edit-item p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors" data-index="${index}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button class="delete-item p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" data-index="${index}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    `,
+      )
+      .join("");
+
+    // Add drag and drop handlers
+    setupDragAndDrop();
+
+    // Add delete handlers
+    document.querySelectorAll(".delete-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = parseInt(btn.dataset.index);
+        menuItems.splice(index, 1);
+        renderMenuItems();
+      });
+    });
+
+    // Add edit handlers (inline edit via prompt for simplicity)
+    document.querySelectorAll(".edit-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = parseInt(btn.dataset.index);
+        const item = menuItems[index];
+        const newLabel = prompt("Edit label:", item.label);
+        if (newLabel !== null && newLabel.trim()) {
+          item.label = newLabel.trim();
+          const newUrl = prompt("Edit URL:", item.url);
+          if (newUrl !== null && newUrl.trim()) {
+            item.url = newUrl.trim();
+            renderMenuItems();
+          }
+        }
+      });
+    });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function setupDragAndDrop() {
+    const items = document.querySelectorAll(".menu-item");
+    let draggedItem = null;
+
+    items.forEach((item) => {
+      item.addEventListener("dragstart", (e) => {
+        draggedItem = item;
+        item.classList.add("opacity-50");
+      });
+
+      item.addEventListener("dragend", (e) => {
+        item.classList.remove("opacity-50");
+        draggedItem = null;
+      });
+
+      item.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        item.classList.add("border-emerald-500");
+      });
+
+      item.addEventListener("dragleave", (e) => {
+        item.classList.remove("border-emerald-500");
+      });
+
+      item.addEventListener("drop", (e) => {
+        e.preventDefault();
+        item.classList.remove("border-emerald-500");
+
+        if (draggedItem && draggedItem !== item) {
+          const fromIndex = parseInt(draggedItem.dataset.index);
+          const toIndex = parseInt(item.dataset.index);
+
+          const [movedItem] = menuItems.splice(fromIndex, 1);
+          menuItems.splice(toIndex, 0, movedItem);
+
+          renderMenuItems();
+        }
+      });
+    });
+  }
+
+  function addMenuItem(label, url, target = "_self") {
+    menuItems.push({ label, url, target });
+    renderMenuItems();
+  }
+
+  // Toggle panels
+  function setupToggle(toggleId, panelId) {
+    const toggle = document.getElementById(toggleId);
+    const panel = document.getElementById(panelId);
+
+    toggle?.addEventListener("click", () => {
+      panel.classList.toggle("hidden");
+      toggle.querySelector("svg").classList.toggle("rotate-180");
+    });
+  }
+
+  setupToggle("toggle-custom-link", "custom-link-form");
+  setupToggle("toggle-pages", "pages-list");
+  setupToggle("toggle-categories", "categories-list");
+
+  // Add custom link
+  document.getElementById("add-custom-link")?.addEventListener("click", () => {
+    const label = document.getElementById("custom-label").value.trim();
+    const url = document.getElementById("custom-url").value.trim();
+    const newTab = document.getElementById("custom-newtab").checked;
+
+    if (!label || !url) {
+      showToast("Please enter both label and URL", true);
+      return;
+    }
+
+    addMenuItem(label, url, newTab ? "_blank" : "_self");
+    document.getElementById("custom-label").value = "";
+    document.getElementById("custom-url").value = "";
+    document.getElementById("custom-newtab").checked = false;
+    showToast("Item added!");
+  });
+
+  // Add selected pages
+  document.getElementById("add-pages")?.addEventListener("click", () => {
+    const checked = document.querySelectorAll(".page-checkbox:checked");
+    if (checked.length === 0) {
+      showToast("Please select at least one page", true);
+      return;
+    }
+
+    checked.forEach((cb) => {
+      addMenuItem(cb.dataset.label, cb.dataset.url, "_self");
+      cb.checked = false;
+    });
+    showToast(`${checked.length} page(s) added!`);
+  });
+
+  // Add selected categories
+  document.getElementById("add-categories")?.addEventListener("click", () => {
+    const checked = document.querySelectorAll(".category-checkbox:checked");
+    if (checked.length === 0) {
+      showToast("Please select at least one category", true);
+      return;
+    }
+
+    checked.forEach((cb) => {
+      addMenuItem(cb.dataset.label, cb.dataset.url, "_self");
+      cb.checked = false;
+    });
+    showToast(`${checked.length} category(ies) added!`);
+  });
+
+  // Save menu
+  document.getElementById("save-btn")?.addEventListener("click", async () => {
+    const name = document.getElementById("menu-name").value.trim();
+
+    if (!name) {
+      showToast("Please enter a menu name", true);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/menus/${menuId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, items: menuItems }),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        showToast("Menu saved!");
+      } else {
+        showToast(result.error || "Failed to save menu", true);
+      }
+    } catch (err) {
+      showToast("An error occurred", true);
+    }
+  });
+
+  // Initial render
+  renderMenuItems();
+</script>
