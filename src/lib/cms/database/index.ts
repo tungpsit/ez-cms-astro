@@ -42,6 +42,12 @@ function getDbConfig(): DatabaseConfig {
         };
       }
       break;
+    case 'supabase':
+      config.supabase = {
+        url: import.meta.env.SUPABASE_URL || process.env.SUPABASE_URL || '',
+        key: import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      };
+      break;
   }
   
   return config;
@@ -62,6 +68,11 @@ async function createAdapter(config: DatabaseConfig): Promise<DatabaseAdapter> {
       const { PostgresqlAdapter } = await import('./postgresql-adapter');
       if (!config.postgresql) throw new Error('PostgreSQL config is required');
       return new PostgresqlAdapter(config.postgresql);
+    }
+    case 'supabase': {
+      const { SupabaseAdapter } = await import('./supabase-adapter');
+      if (!config.supabase) throw new Error('Supabase config is required');
+      return new SupabaseAdapter(config.supabase);
     }
     default:
       throw new Error(`Unsupported database type: ${config.type}`);

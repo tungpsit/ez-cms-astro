@@ -39,7 +39,7 @@ Whether you're building a personal blog, a corporate website, or a full-featured
 - 📦 **Self-Hosted** — Your data, your server, your rules
 - 🎨 **Modern Admin UI** — Beautiful, responsive admin panel built with React
 - 🔌 **Extensible** — Plugin architecture for infinite customization
-- 💾 **Database Agnostic** — SQLite, MySQL, or PostgreSQL — your choice
+- 💾 **Database Agnostic** — SQLite, MySQL, PostgreSQL, or Supabase — your choice
 
 ---
 
@@ -72,6 +72,7 @@ Whether you're building a personal blog, a corporate website, or a full-featured
 - **📦 SQLite** — Zero-config, perfect for development and small sites
 - **🐬 MySQL** — Battle-tested for production environments
 - **🐘 PostgreSQL** — Enterprise-grade reliability and features
+- **⚡ Supabase** — API-based connection, perfect for Vercel deployments
 
 ---
 
@@ -99,6 +100,7 @@ graph TB
         F --> I[(SQLite)]
         F --> J[(MySQL)]
         F --> K[(PostgreSQL)]
+        F --> M[(Supabase API)]
         H --> L[/Media Storage/]
     end
     
@@ -263,6 +265,8 @@ DB_PG_DATABASE=cms
 | `DB_PG_USER` | `string` | `postgres` | PostgreSQL username |
 | `DB_PG_PASSWORD` | `string` | — | PostgreSQL password |
 | `DB_PG_DATABASE` | `string` | `cms` | PostgreSQL database name |
+| `SUPABASE_URL` | `string` | — | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | `string` | — | Supabase service role key (for API access) |
 
 ---
 
@@ -304,7 +308,8 @@ ez-cms-astro/
 │   │   │   │   ├── types.ts
 │   │   │   │   ├── sqlite-adapter.ts
 │   │   │   │   ├── mysql-adapter.ts
-│   │   │   │   └── postgresql-adapter.ts
+│   │   │   │   ├── postgresql-adapter.ts
+│   │   │   │   └── supabase-adapter.ts
 │   │   │   ├── config.ts       # Configuration loader
 │   │   │   ├── plugins.ts      # Plugin manager
 │   │   │   ├── themes.ts       # Theme manager

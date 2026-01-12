@@ -174,7 +174,7 @@ export interface DatabaseAdapter {
   deleteFormSubmission(id: string): Promise<{ success: boolean; error?: string }>;
 }
 
-export type DatabaseType = 'sqlite' | 'mysql' | 'postgresql';
+export type DatabaseType = 'sqlite' | 'mysql' | 'postgresql' | 'supabase';
 
 export interface DatabaseConfig {
   type: DatabaseType;
@@ -194,5 +194,9 @@ export interface DatabaseConfig {
     user: string;
     password: string;
     database: string;
+  };
+  supabase?: {
+    url: string;
+    key: string;
   };
 }
